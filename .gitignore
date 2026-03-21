@@ -1,0 +1,32 @@
+# Ignore everything
+*
+!.gitignore
+!README.md
+!desk.bill
+!desk.docket-0
+!sys.kelvin
+
+# Poker app files only
+!app/
+app/*
+!app/poker-*.hoon
+!app/slab-mint.hoon
+
+!sur/
+sur/*
+!sur/poker.hoon
+
+!lib/
+lib/*
+!lib/format.hoon
+!lib/poker-*.hoon
+
+!mar/
+mar/*
+!mar/poker-*.hoon
+
+!glob/
+!glob/**
+
+!img/
+!img/**

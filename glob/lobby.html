@@ -1,0 +1,2433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>~poker lobby</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Syne:wght@400;600;700&display=swap');
+
+  :root {
+    --bg:           #1e2b3a;
+    --bg-panel:     #172030;
+    --bg-input:     #111a26;
+    --gold:         #c9a84c;
+    --gold-dim:     #8a6f38;
+    --gold-glow:    rgba(201, 168, 76, 0.15);
+    --text:         #e8e0d0;
+    --text-dim:     #6b7a8d;
+    --text-muted:   #3d4d60;
+    --ship:         #b89a58;
+    --system:       #4a5a6e;
+    --border:       #253347;
+    --font-mono:    'JetBrains Mono', monospace;
+    --font-display: 'Syne', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ══════════════════════════════════════════════════════════════
+     HEADER BAR
+  ══════════════════════════════════════════════════════════════ */
+  .header-bar {
+    width: 100%;
+    flex-shrink: 0;
+    background: var(--bg-panel);
+    border-bottom: 1px solid var(--border);
+    padding: 22px 32px 18px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    position: relative;
+  }
+
+  .header-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .header-title {
+    font-family: var(--font-display);
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--gold);
+    letter-spacing: 0.06em;
+    line-height: 1;
+  }
+
+  .header-subtitle {
+    font-family: var(--font-display);
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--text-dim);
+    letter-spacing: 0.22em;
+    font-style: italic;
+  }
+
+  .header-attribution {
+    position: absolute;
+    bottom: 18px;
+    right: 32px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 0.08em;
+  }
+
+  .header-about-btn {
+    position: absolute;
+    top: 50%;
+    right: 160px;
+    transform: translateY(-50%);
+    background: transparent;
+    border: 1px solid var(--gold-dim);
+    border-radius: 3px;
+    color: var(--gold);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    padding: 6px 14px;
+    cursor: pointer;
+    letter-spacing: 0.06em;
+    transition: background 0.2s;
+  }
+
+  .header-about-btn:hover { background: var(--gold-glow); }
+
+  /* ── News ticker ── */
+  .ticker-wrap {
+    width: 100%;
+    background: #0a0a0a;
+    border-bottom: 1px solid var(--gold);
+    overflow: hidden;
+    white-space: nowrap;
+    height: 1.8rem;
+    display: flex;
+    align-items: center;
+    box-sizing: border-box;
+  }
+  .ticker-track {
+    display: inline-block;
+    animation: ticker-scroll 40s linear infinite;
+    line-height: 1.8rem;
+  }
+  .ticker-track:hover { animation-play-state: paused; }
+  .ticker-item {
+    display: inline;
+    color: var(--gold);
+    font-family: 'Courier New', monospace;
+    font-size: 1rem;
+    letter-spacing: 0.06em;
+    line-height: 1.8rem;
+  }
+  .ticker-sep {
+    display: inline;
+    color: var(--gold);
+    opacity: 0.5;
+    font-size: 1rem;
+    line-height: 1.8rem;
+  }
+  @keyframes ticker-scroll {
+    0%   { transform: translateX(100vw); }
+    100% { transform: translateX(-100%); }
+  }
+
+  /* Stats pinned to bottom of left panel */
+  .left-bottom-stats {
+    margin-top: auto;
+    flex-shrink: 0;
+    padding-bottom: 0;
+    padding-top: 0;
+  }
+
+  .left-bottom-stats .stat-divider {
+    margin: 0 32px 14px;
+  }
+
+  .left-bottom-stats .left-stats {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 32px 16px;
+    gap: 0;
+  }
+
+  .left-bottom-stats .stat-item {
+    align-items: center;
+    text-align: center;
+    flex: 1;
+  }
+
+  .left-bottom-stats .stat-value {
+    font-size: 18px;
+    letter-spacing: 0;
+  }
+
+  .left-bottom-stats .stat-label {
+    font-size: 9px;
+    letter-spacing: 0.07em;
+  }
+
+  /* ══════════════════════════════════════════════════════════════
+     BODY — panels sit below header
+  ══════════════════════════════════════════════════════════════ */
+  .lobby-body {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .left-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    border-right: 1px solid var(--border);
+    background: var(--bg-panel);
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Panel title */
+  .left-title {
+    padding: 28px 32px 24px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .left-title-main {
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--gold);
+    letter-spacing: 0.04em;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+
+  .left-title-sub {
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  /* Stats block — stacked vertically, fourth separated */
+  .left-stats {
+    padding: 28px 32px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+    flex-shrink: 0;
+  }
+
+  .stat-item {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .stat-value {
+    font-family: var(--font-display);
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.01em;
+    line-height: 1;
+  }
+
+  .stat-label {
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+  }
+
+  .stat-divider {
+    height: 1px;
+    background: var(--border);
+    flex-shrink: 0;
+  }
+
+  /* Remaining space — sigil at bottom */
+  .left-sigil-area {
+    flex: 1;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    position: relative;
+    padding-bottom: 32px;
+  }
+
+  /* Urbit ~ sigil — single wave, centered, held at bottom */
+  .urbit-sigil {
+    width: 140px;
+    height: 140px;
+    opacity: 0.18;
+    pointer-events: none;
+  }
+
+  /* ══════════════════════════════════════════════════════════════
+     RIGHT PANEL
+  ══════════════════════════════════════════════════════════════ */
+  .right-panel {
+    width: 360px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    border-left: 1px solid var(--border);
+    background: var(--bg-panel);
+  }
+
+  /* ── Section headers ── */
+  .section-header {
+    font-family: var(--font-display);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--gold-dim);
+    padding: 14px 32px 10px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .section-header::before {
+    content: '';
+    display: inline-block;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--gold-dim);
+  }
+
+  /* ── Ship input — combined lookup and challenge ── */
+  .ship-section {
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .ship-body {
+    padding: 16px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  /* Sized for longest L1 planet name: ~marzod-barpub = 14 chars + tilde */
+  .ship-input {
+    width: 100%;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    padding: 7px 10px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .ship-input::placeholder { color: var(--text-muted); }
+  .ship-input:focus { border-color: var(--gold-dim); }
+
+  .ship-btn-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .ship-btn-row .rep-lookup-btn,
+  .ship-btn-row .challenge-btn {
+    flex: 1;
+    text-align: center;
+  }
+
+  /* ── Reputation lookup ── */
+  .rep-section {
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .rep-body {
+    padding: 8px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .rep-input-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .rep-input {
+    flex: 1;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    padding: 7px 10px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .rep-input::placeholder { color: var(--text-muted); }
+  .rep-input:focus { border-color: var(--gold-dim); }
+
+  .rep-lookup-btn {
+    background: transparent;
+    border: 1px solid var(--gold);
+    border-radius: 3px;
+    color: var(--gold);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    padding: 7px 16px;
+    cursor: pointer;
+    letter-spacing: 0.08em;
+    transition: background 0.2s;
+    white-space: nowrap;
+  }
+
+  .rep-lookup-btn:hover { background: var(--gold-glow); }
+
+  .rep-result {
+    display: none;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .rep-result.visible { display: flex; }
+
+  .rep-details { flex: 1; }
+
+  .rep-ship-name {
+    color: var(--ship);
+    font-size: 12px;
+    margin-bottom: 8px;
+  }
+
+  .rep-meter-label {
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.06em;
+    margin-bottom: 5px;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+
+  .rep-meter-label-rate {
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+  }
+
+  /* Outer track — full width, dark background showing the full range */
+  .rep-meter-track {
+    height: 6px;
+    background: var(--bg);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 4px;
+    position: relative;
+  }
+
+  /* Colour spectrum always visible beneath the fill — shows full range for context */
+  .rep-meter-spectrum {
+    position: absolute;
+    inset: 0;
+    border-radius: 3px;
+    background: linear-gradient(
+      90deg,
+      #2a5298 0%,          /* blue  — 0%    */
+      #2a5298 1%,
+      #27ae60 1%,          /* green — 1–2%  */
+      #27ae60 3%,
+      #f39c12 3%,          /* yellow — 3–10% */
+      #f39c12 10%,
+      #c0392b 10%,         /* red — >10%    */
+      #c0392b 100%
+    );
+    opacity: 0.18;
+  }
+
+  /* Fill: width = player_hands / max_hands (sample size)
+           color = complaint rate band */
+  .rep-meter-fill {
+    height: 100%;
+    border-radius: 3px;
+    position: relative;
+    z-index: 1;
+    transition: width 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  .rep-meter-fill.band-blue   { background: #2a5298; }
+  .rep-meter-fill.band-green  { background: #27ae60; }
+  .rep-meter-fill.band-yellow { background: #f39c12; }
+  .rep-meter-fill.band-red    { background: #c0392b; }
+
+  /* Sample size label below meter */
+  .rep-meter-sample {
+    font-size: 9px;
+    color: var(--text-muted);
+    letter-spacing: 0.06em;
+    margin-bottom: 10px;
+    font-style: italic;
+  }
+
+  .rep-stats-row {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  }
+
+  .rep-stat { display: flex; flex-direction: column; gap: 2px; }
+
+  .rep-stat-val {
+    font-family: var(--font-display);
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.01em;
+    line-height: 1;
+  }
+
+  .rep-stat-lbl {
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+
+  /* ── Challenge section ── */
+  .challenge-section {
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .challenge-body {
+    padding: 8px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .challenge-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .challenge-input {
+    flex: 1;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    padding: 7px 10px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .challenge-input::placeholder { color: var(--text-muted); }
+  .challenge-input:focus { border-color: var(--gold-dim); }
+
+  .challenge-btn {
+    background: transparent;
+    border: 1px solid var(--gold);
+    border-radius: 3px;
+    color: var(--gold);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    padding: 7px 16px;
+    cursor: pointer;
+    letter-spacing: 0.08em;
+    transition: background 0.2s, box-shadow 0.3s;
+    white-space: nowrap;
+  }
+
+  .challenge-btn:hover { background: var(--gold-glow); }
+
+  .challenge-btn.waiting {
+    animation: challenge-pulse 1.8s ease-in-out infinite;
+  }
+
+  @keyframes challenge-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(201,168,76,0); }
+    50%       { box-shadow: 0 0 0 6px rgba(201,168,76,0.22), 0 0 16px rgba(201,168,76,0.12); }
+  }
+
+  .stakes-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .stakes-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .stakes-label {
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.04em;
+  }
+
+  .stakes-input {
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    padding: 6px 8px;
+    outline: none;
+    transition: border-color 0.2s;
+    width: 88px;
+  }
+
+  .stakes-input::placeholder { color: var(--text-muted); }
+  .stakes-input:focus { border-color: var(--gold-dim); }
+  .stakes-input.snapped { border-color: var(--gold); }
+
+  /* ── Chat section ── */
+  .chat-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .chat-header-bar {
+    border-bottom: 1px solid var(--border);
+    padding: 10px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    flex-shrink: 0;
+  }
+
+  .chat-about-btn {
+    background: transparent;
+    border: 1px solid var(--gold);
+    border-radius: 3px;
+    color: var(--gold);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    padding: 7px 16px;
+    height: 34px;
+    cursor: pointer;
+    letter-spacing: 0.08em;
+    transition: background 0.2s;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  .chat-about-btn:hover {
+    background: var(--gold-glow);
+  }
+
+  .chat-log {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px 0;
+    scroll-behavior: smooth;
+  }
+
+  .chat-log::-webkit-scrollbar { width: 4px; }
+  .chat-log::-webkit-scrollbar-track { background: transparent; }
+  .chat-log::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 2px; }
+
+  .chat-row {
+    display: flex;
+    align-items: baseline;
+    padding: 3px 32px;
+    line-height: 1.55;
+    transition: background 0.15s;
+  }
+
+  .chat-row:hover { background: rgba(255,255,255,0.02); }
+
+  .chat-author {
+    color: var(--ship);
+    font-size: 12px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    margin-right: 8px;
+  }
+
+  .chat-text {
+    color: var(--text);
+    font-size: 12px;
+    word-break: break-word;
+    flex: 1;
+  }
+
+  .chat-time {
+    color: var(--text-muted);
+    font-size: 10px;
+    white-space: nowrap;
+    margin-left: 10px;
+    flex-shrink: 0;
+    align-self: center;
+  }
+
+  .chat-row.system { padding: 2px 32px; }
+
+  .chat-row.system .chat-text {
+    color: var(--system);
+    font-style: italic;
+    font-size: 11px;
+  }
+
+  .chat-input-area {
+    border-top: 1px solid var(--border);
+    padding: 10px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  .chat-input-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .chat-input {
+    flex: 1;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    padding: 8px 10px;
+    outline: none;
+    resize: none;
+    line-height: 1.4;
+    transition: border-color 0.2s;
+  }
+
+  .chat-input::placeholder { color: var(--text-muted); }
+  .chat-input:focus { border-color: var(--gold-dim); }
+
+  .chat-send-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    color: var(--text-dim);
+    font-family: var(--font-mono);
+    font-size: 18px;
+    width: 34px;
+    height: 34px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color 0.2s, color 0.2s;
+    flex-shrink: 0;
+  }
+
+  .chat-send-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  .chat-send-col .char-counter {
+    font-size: 9px;
+    white-space: nowrap;
+  }
+
+  .chat-meta-btns {
+    display: flex;
+    gap: 6px;
+  }
+
+  .chat-meta-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .char-counter {
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+    transition: color 0.2s;
+  }
+
+  .char-counter.warn  { color: var(--gold-dim); }
+  .char-counter.limit { color: #c0392b; }
+
+  .stakes-session-row {
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .stakes-session-label {
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .stakes-session-hint {
+    color: var(--gold-dim);
+    font-size: 9px;
+    letter-spacing: 0.04em;
+    text-transform: none;
+  }
+
+  .stakes-session-inputs {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .stakes-session-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    flex: 1;
+  }
+
+  .stakes-session-divider {
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 0.08em;
+    flex-shrink: 0;
+    padding-bottom: 16px;
+  }
+
+  .stakes-input-optional {
+    border-color: var(--text-muted);
+    opacity: 0.7;
+    transition: opacity 0.2s, border-color 0.2s;
+  }
+
+  .stakes-input-optional:focus,
+  .stakes-input-optional:not(:placeholder-shown) {
+    opacity: 1;
+    border-color: var(--gold-dim);
+  }
+
+  .rewards-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 14, 20, 0.72);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+  }
+
+  .rewards-overlay.active {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  .rewards-card {
+    background: rgba(20, 28, 40, 0.97);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 28px 32px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+    animation: overlay-in 0.25s ease forwards;
+  }
+
+  .rewards-title {
+    font-family: var(--font-display);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--gold);
+    border: 1px solid var(--gold-dim);
+    padding: 10px 24px;
+    border-radius: 3px;
+    width: 100%;
+    text-align: center;
+  }
+
+  .rewards-msg {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-dim);
+    letter-spacing: 0.04em;
+  }
+
+  .rewards-close {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    color: var(--text-dim);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    padding: 6px 20px;
+    cursor: pointer;
+    letter-spacing: 0.08em;
+    transition: border-color 0.2s, color 0.2s;
+  }
+
+  .rewards-close:hover { border-color: var(--gold-dim); color: var(--gold); }
+  .challenge-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 21, 32, 0.72);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.35s ease;
+  }
+
+  .challenge-overlay.active { opacity: 1; pointer-events: all; }
+  .challenge-overlay.dissolving { opacity: 0; pointer-events: none; transition: opacity 0.6s ease; }
+
+  .overlay-card {
+    border: 1px solid var(--gold-dim);
+    border-radius: 4px;
+    background: rgba(20, 28, 40, 0.92);
+    padding: 28px 32px;
+    width: 340px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+    box-shadow: 0 0 40px rgba(201,168,76,0.08), 0 8px 32px rgba(0,0,0,0.6);
+  }
+
+  .overlay-title {
+    font-family: var(--font-display);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--gold);
+    text-align: center;
+    line-height: 1.8;
+    border: 1px solid var(--gold-dim);
+    padding: 10px 24px;
+    border-radius: 3px;
+    width: 100%;
+  }
+
+  .overlay-challenger { font-size: 12px; color: var(--ship); text-align: center; }
+  .overlay-challenger span {
+    color: var(--text-dim);
+    font-size: 10px;
+    display: block;
+    margin-bottom: 3px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .overlay-stakes { display: flex; gap: 24px; width: 100%; justify-content: center; }
+
+  .overlay-stat { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .overlay-stat-val { font-size: 16px; color: var(--text); font-weight: 500; }
+  .overlay-stat-lbl { font-size: 9px; color: var(--text-dim); letter-spacing: 0.1em; text-transform: uppercase; }
+
+  .overlay-rep {
+    width: 100%;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .overlay-rep-label { font-size: 9px; color: var(--text-dim); letter-spacing: 0.1em; text-transform: uppercase; }
+  .overlay-rep-meter { height: 3px; background: var(--bg); border-radius: 2px; overflow: hidden; }
+  .overlay-rep-fill { height: 100%; background: linear-gradient(90deg, var(--gold-dim), var(--gold)); border-radius: 2px; width: 72%; }
+  .overlay-rep-stats { display: flex; gap: 16px; }
+
+  .overlay-timer {
+    font-family: var(--font-display);
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--gold);
+    letter-spacing: 0.04em;
+    line-height: 1;
+  }
+
+  .overlay-timer.urgent { color: #c07a30; }
+
+  .overlay-decline-area { width: 100%; display: none; flex-direction: column; gap: 6px; }
+  .overlay-decline-area.visible { display: flex; }
+
+  .overlay-buttons { display: flex; gap: 12px; width: 100%; justify-content: center; }
+
+  .overlay-btn {
+    flex: 1;
+    padding: 9px 0;
+    border-radius: 3px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+  }
+
+  .overlay-btn-accept { background: var(--gold-glow); border: 1px solid var(--gold); color: var(--gold); }
+  .overlay-btn-accept:hover { background: rgba(201,168,76,0.28); }
+  .overlay-btn-decline { background: transparent; border: 1px solid var(--border); color: var(--text-dim); }
+  .overlay-btn-decline:hover { border-color: var(--text-dim); color: var(--text); }
+
+  .overlay-btn-confirm-decline {
+    background: transparent;
+    border: 1px solid var(--text-muted);
+    color: var(--text-dim);
+    padding: 7px 0;
+    border-radius: 3px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    width: 100%;
+    transition: border-color 0.2s, color 0.2s;
+    display: none;
+  }
+
+  .overlay-btn-confirm-decline.visible { display: block; }
+  .overlay-btn-confirm-decline:hover { border-color: var(--text-dim); color: var(--text); }
+
+  @keyframes overlay-in {
+    from { transform: scale(0.97); opacity: 0; }
+    to   { transform: scale(1);    opacity: 1; }
+  }
+
+  .challenge-overlay.active .overlay-card { animation: overlay-in 0.3s ease forwards; }
+
+  /* ══════════════════════════════════════════════════════════════
+     VALIDATION OVERLAY
+  ══════════════════════════════════════════════════════════════ */
+  .validation-overlay {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .validation-overlay.active { opacity: 1; }
+  .validation-overlay.dissolving { opacity: 0; transition: opacity 0.6s ease; }
+
+  .validation-card {
+    background: rgba(20, 28, 40, 0.96);
+    border: 1px solid var(--gold-dim);
+    border-radius: 4px;
+    padding: 20px 28px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    max-width: 280px;
+    text-align: center;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+  }
+
+  .validation-title {
+    font-family: var(--font-display);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--gold);
+  }
+
+  .validation-msg { font-size: 11px; color: var(--text); line-height: 1.6; }
+  .validation-footer { font-size: 10px; color: var(--text-dim); letter-spacing: 0.06em; font-style: italic; }
+
+  .howto-btn {
+    background: transparent;
+    border: 1px solid var(--gold-dim);
+    border-radius: 3px;
+    color: var(--gold);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    padding: 7px 14px;
+    cursor: pointer;
+    letter-spacing: 0.06em;
+    transition: background 0.2s, color 0.2s;
+    display: inline-block;
+    margin-left: -2px;
+  }
+
+  .howto-btn:hover {
+    background: var(--gold-glow);
+  }
+
+  /* Post-room complaint button */
+  .complaint-return-area {
+    padding: 0 32px 14px;
+  }
+
+  .complaint-return-btn {
+    width: 100%;
+    background: transparent;
+    border: 1px solid var(--gold-dim);
+    border-radius: 3px;
+    color: var(--gold);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    padding: 8px 14px;
+    cursor: pointer;
+    letter-spacing: 0.08em;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .complaint-return-btn:hover { background: var(--gold-glow); }
+
+  .complaint-countdown {
+    font-size: 10px;
+    color: var(--gold-dim);
+    letter-spacing: 0.06em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .complaint-countdown.urgent { color: #c0392b; }
+
+  /* Complaint radios — reused from room, defined here for lobby */
+  .complaint-radios {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .complaint-radio {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    transition: border-color 0.2s, background 0.2s;
+  }
+
+  .complaint-radio:hover {
+    border-color: var(--gold-dim);
+    background: var(--gold-glow);
+  }
+
+  .complaint-radio input[type="radio"] { display: none; }
+
+  .complaint-radio input[type="radio"]:checked ~ .radio-mark {
+    border-color: var(--gold);
+    background: var(--gold);
+  }
+
+  .complaint-radio input[type="radio"]:checked ~ .radio-text { color: var(--gold); }
+
+  .complaint-radio:has(input:checked) {
+    border-color: var(--gold-dim);
+    background: var(--gold-glow);
+  }
+
+  .radio-mark {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 1px solid var(--text-muted);
+    flex-shrink: 0;
+    transition: border-color 0.2s, background 0.2s;
+  }
+
+  .radio-text {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text);
+    letter-spacing: 0.04em;
+    transition: color 0.2s;
+  }
+
+  .complaint-label {
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 2px;
+  }
+
+  .complaint-notice {
+    font-size: 10px;
+    color: var(--text-muted);
+    font-style: italic;
+    line-height: 1.5;
+  }
+
+  /* Reuse broken-overlay/card/header/body/footer from room — define here */
+  .broken-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 14, 20, 0.88);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.35s ease;
+  }
+
+  .broken-overlay.active { opacity: 1; pointer-events: all; }
+
+  .broken-card {
+    background: rgba(20, 28, 40, 0.97);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    width: 400px;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.7);
+    overflow: hidden;
+  }
+
+  .broken-header {
+    padding: 20px 28px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .broken-title {
+    font-family: var(--font-display);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+
+  .broken-by {
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+  }
+
+  .broken-by .ship-name { color: var(--ship); }
+
+  .broken-body {
+    padding: 20px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .broken-footer {
+    padding: 14px 28px 20px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 10px;
+  }
+
+  .broken-btn {
+    flex: 1;
+    padding: 9px 0;
+    border-radius: 3px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+  }
+
+  .btn-file-complaint {
+    background: var(--gold-glow);
+    border: 1px solid var(--gold-dim);
+    color: var(--gold);
+  }
+
+  .btn-file-complaint:hover { background: rgba(201,168,76,0.22); }
+
+  .btn-no-complaint {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+  }
+
+  .btn-no-complaint:hover { border-color: var(--text-dim); color: var(--text); }
+  .howto-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 21, 32, 0.82);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 150;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.35s ease;
+  }
+
+  .howto-overlay.active {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  .howto-overlay.dissolving {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.5s ease;
+  }
+
+  .howto-card {
+    background: rgba(20, 28, 40, 0.97);
+    border: 1px solid var(--gold-dim);
+    border-radius: 4px;
+    width: 620px;
+    max-height: 82vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 0 60px rgba(201,168,76,0.07), 0 16px 48px rgba(0,0,0,0.7);
+    animation: overlay-in 0.3s ease forwards;
+  }
+
+  .howto-header {
+    padding: 24px 32px 18px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+
+  .howto-title {
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--gold);
+  }
+
+  .howto-close {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    color: var(--text-dim);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    padding: 4px 12px;
+    cursor: pointer;
+    letter-spacing: 0.08em;
+    transition: border-color 0.2s, color 0.2s;
+  }
+
+  .howto-close:hover {
+    border-color: var(--gold-dim);
+    color: var(--gold);
+  }
+
+  .howto-body {
+    padding: 28px 32px 32px;
+    overflow-y: auto;
+    flex: 1;
+    line-height: 1.75;
+  }
+
+  .howto-body::-webkit-scrollbar { width: 4px; }
+  .howto-body::-webkit-scrollbar-track { background: transparent; }
+  .howto-body::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 2px; }
+
+  .howto-lead {
+    margin-bottom: 24px;
+  }
+
+  .howto-lead p {
+    font-family: var(--font-display);
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--gold);
+    line-height: 1.9;
+    letter-spacing: 0.02em;
+  }
+
+  .howto-lead .howto-prose {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text);
+    font-weight: 400;
+    margin-top: 10px;
+    line-height: 1.75;
+  }
+
+  .howto-section {
+    margin-bottom: 22px;
+  }
+
+  .howto-section-title {
+    font-family: var(--font-display);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--gold-dim);
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .howto-prose {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text);
+    line-height: 1.75;
+  }
+
+</style>
+</head>
+<body>
+
+<!-- ══ HEADER ═══════════════════════════════════════════════════ -->
+<div class="header-bar">
+  <div class="header-center">
+    <div class="header-title">Head-Up Poker</div>
+    <div class="header-subtitle">— A Game for Gentlemen —</div>
+  </div>
+  <div class="header-attribution">@ Fhlosoton Paradise</div>
+</div>
+
+<!-- ══ NEWS TICKER ══════════════════════════════════════════════ -->
+<div class="ticker-wrap">
+  <div class="ticker-track"><span class="ticker-item">Welcome to Fhloston Paradise!</span><span class="ticker-sep">♠</span><span class="ticker-item">Be impeccable with your honor.</span><span class="ticker-sep">♠</span><span class="ticker-item">See the chat to find a game and issue a challenge.</span><span class="ticker-sep">♠</span><span class="ticker-item">Your coins have been issued.</span><span class="ticker-sep">♠</span><span class="ticker-item">Welcome, Sycuan!</span><span class="ticker-sep">♠</span></div>
+</div>
+
+<!-- ══ LOBBY BODY ════════════════════════════════════════════════ -->
+<div class="lobby-body">
+
+<!-- ══ LEFT PANEL ═══════════════════════════════════════════════ -->
+<div class="left-panel">
+
+  <!-- Ship input — no section header, self-explanatory -->
+  <div class="ship-section">
+    <div class="ship-body">
+      <input class="ship-input" type="text" placeholder="~planet-name" id="shipInput" maxlength="28">
+      <div class="ship-btn-row">
+        <button class="rep-lookup-btn" onclick="showRepResult()">Look-Up</button>
+        <button class="challenge-btn" id="challengeBtn" onclick="sendChallenge()">Challenge</button>
+      </div>
+      <div class="rep-result" id="repResult">
+        <div class="rep-details">
+          <div class="rep-ship-name" id="repShipName">~sampel-palnet</div>
+          <div class="rep-meter-label">
+            <span>Complaint rate</span>
+            <span class="rep-meter-label-rate" id="repRateLabel">—</span>
+          </div>
+          <div class="rep-meter-track">
+            <div class="rep-meter-spectrum"></div>
+            <div class="rep-meter-fill band-blue" id="repMeterFill" style="width:0%"></div>
+          </div>
+          <div class="rep-meter-sample" id="repSampleLabel">— hands played</div>
+          <div class="rep-stats-row">
+            <div class="rep-stat">
+              <div class="rep-stat-val" id="repHands">—</div>
+              <div class="rep-stat-lbl">Hands Played</div>
+            </div>
+            <div class="rep-stat">
+              <div class="rep-stat-val" id="repBalance">—</div>
+              <div class="rep-stat-lbl">Slab balance</div>
+            </div>
+            <div class="rep-stat">
+              <div class="rep-stat-val" id="repComplaints">—</div>
+              <div class="rep-stat-lbl">Complaints received</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stakes -->
+  <div class="challenge-section">
+    <div class="section-header">Stakes</div>
+    <div class="challenge-body">
+      <div class="stakes-grid">
+        <div class="stakes-cell">
+          <span class="stakes-label">Small Blind</span>
+          <input class="stakes-input" type="number" id="smallBlind" placeholder="10" min="1" max="9999999" value="10">
+        </div>
+        <div class="stakes-cell">
+          <span class="stakes-label">Big Blind</span>
+          <input class="stakes-input" type="number" id="bigBlind" placeholder="20" min="10" max="9999999" value="20">
+        </div>
+        <div class="stakes-cell">
+          <span class="stakes-label">Minimum Raise</span>
+          <input class="stakes-input" type="number" id="minRaise" placeholder="20" min="1" max="9999999" value="20">
+        </div>
+        <div class="stakes-cell">
+          <span class="stakes-label">Buy-In</span>
+          <input class="stakes-input" type="number" id="buyIn" placeholder="1000" min="1" max="9999999" value="1000">
+        </div>
+      </div>
+      <div class="stakes-session-row">
+        <div class="stakes-session-label">Session ends when — <span class="stakes-session-hint">at least one required</span></div>
+        <div class="stakes-session-inputs">
+          <div class="stakes-session-cell">
+            <input class="stakes-input stakes-input-optional" type="number" id="handsLimit" placeholder="—" min="1" max="9999">
+            <span class="stakes-label">Hands</span>
+          </div>
+          <div class="stakes-session-divider">or</div>
+          <div class="stakes-session-cell">
+            <input class="stakes-input stakes-input-optional" type="number" id="capLimit" placeholder="—" min="1" max="9999999">
+            <span class="stakes-label">Total Cap</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats pinned to bottom -->
+  <div class="left-bottom-stats">
+    <div class="stat-divider"></div>
+    <!-- Post-room complaint button — visible for 60s after returning from a room -->
+    <div class="complaint-return-area" id="complaintReturnArea" style="display:none;">
+      <button class="complaint-return-btn" id="complaintReturnBtn" onclick="showLobbyComplaint()">
+        <span id="complaintReturnLabel">File Complaint</span>
+        <span class="complaint-countdown" id="complaintCountdown">1:00</span>
+      </button>
+    </div>
+    <div class="left-stats">
+      <div class="stat-item">
+        <div class="stat-value">4,821</div>
+        <div class="stat-label">Hands Played</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">318</div>
+        <div class="stat-label">Unique Ships</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">12</div>
+        <div class="stat-label">Present Now</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══ RIGHT PANEL ══════════════════════════════════════════════ -->
+<div class="right-panel">
+
+  <!-- Chat only — full height -->
+  <div class="chat-section">
+    <div class="chat-log" id="chatLog">
+    </div>
+    <div class="chat-input-area">
+      <div class="chat-input-row">
+        <textarea class="chat-input" rows="2" placeholder="Say something…" id="chatInput" maxlength="280"></textarea>
+        <div class="chat-send-col">
+          <button class="chat-send-btn" onclick="sendChat()" title="send">↑</button>
+          <span class="char-counter" id="charCounter">280 char.</span>
+        </div>
+      </div>
+      <div class="chat-meta-row">
+        <div class="chat-meta-btns">
+          <button class="chat-about-btn" onclick="showHowTo()">About</button>
+          <button class="chat-about-btn" onclick="showRewardsOverlay()">Fhloston Rewards</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div><!-- end lobby-body -->
+
+<!-- ══ CHALLENGE OVERLAY ═════════════════════════════════════════ -->
+<div class="challenge-overlay" id="challengeOverlay">
+  <div class="overlay-card">
+    <div class="overlay-title">Challenge<br>Notification</div>
+    <div class="overlay-challenger">
+      <span>from</span>~wicdev-wisryt
+    </div>
+    <div class="overlay-stakes">
+      <div class="overlay-stat">
+        <div class="overlay-stat-val" id="overlaySB">10</div>
+        <div class="overlay-stat-lbl">Small Blind</div>
+      </div>
+      <div class="overlay-stat">
+        <div class="overlay-stat-val" id="overlayBB">20</div>
+        <div class="overlay-stat-lbl">Big Blind</div>
+      </div>
+      <div class="overlay-stat">
+        <div class="overlay-stat-val" id="overlayHands">—</div>
+        <div class="overlay-stat-lbl">Hands</div>
+      </div>
+      <div class="overlay-stat">
+        <div class="overlay-stat-val" id="overlayCap">—</div>
+        <div class="overlay-stat-lbl">Total Cap</div>
+      </div>
+    </div>
+    <div class="overlay-rep">
+      <div class="overlay-rep-label">~wicdev-wisryt reputation</div>
+      <div class="overlay-rep-meter"><div class="overlay-rep-fill"></div></div>
+      <div class="overlay-rep-stats">
+        <div class="rep-stat"><div class="rep-stat-val">89</div><div class="rep-stat-lbl">Hands</div></div>
+        <div class="rep-stat"><div class="rep-stat-val">6,162</div><div class="rep-stat-lbl">Slab</div></div>
+        <div class="rep-stat"><div class="rep-stat-val">0</div><div class="rep-stat-lbl">Complaints</div></div>
+      </div>
+    </div>
+    <div class="overlay-timer" id="overlayTimer">1:00</div>
+    <div class="overlay-decline-area" id="declineArea"></div>
+    <div class="overlay-buttons" id="overlayButtons">
+      <button class="overlay-btn overlay-btn-decline" onclick="initiateDecline()">Decline</button>
+      <button class="overlay-btn overlay-btn-accept" onclick="acceptChallenge()">Accept</button>
+    </div>
+    <button class="overlay-btn-confirm-decline" id="confirmDeclineBtn" onclick="confirmDecline()">Send decline</button>
+  </div>
+</div>
+
+<!-- ══ VALIDATION OVERLAY ════════════════════════════════════════ -->
+<div class="validation-overlay" id="validationOverlay">
+  <div class="validation-card">
+    <div class="validation-title">Invalid Stakes</div>
+    <div class="validation-msg" id="validationMsg"></div>
+    <div class="validation-footer">fields have been corrected</div>
+  </div>
+</div>
+
+<script>
+  // ══════════════════════════════════════════════════════════════
+  // EYRE / URBIT WIRING
+  // ══════════════════════════════════════════════════════════════
+
+  // ── Urbit API helpers ──────────────────────────────────────────
+  // uid: unique channel id for this session
+  const uid = `lobby-${Date.now()}-${Math.floor(Math.random() * 0xFFFF).toString(16)}`;
+  let   eventId   = 1;
+  let   ourShip   = null;   // populated from /session after init
+  let   channelOpen = false;
+  let   pendingChallenge = null; // { ship, roomId } when we sent one
+  let   hostShip   = null;   // lobby host ship (all chat routes through here)
+
+  // Open the Eyre channel and begin SSE stream
+  async function openChannel() {
+    // Get our ship name from the session cookie path
+    try {
+      const res = await fetch('/session.js');
+      const txt = await res.text();
+      const m   = txt.match(/window\.ship\s*=\s*"([^"]+)"/);
+      if (m) ourShip = m[1];
+    } catch(e) {}
+
+    // PUT the channel open
+    await eyrePut([]);
+    channelOpen = true;
+
+    // Lobby host is always forbes-marmet
+    hostShip = 'forbes-marmet';
+    // Subscribe to HOST's /chat (not own ship)
+    await eyreSubscribeShip(hostShip || ourShip, 'poker-lobby', '/chat', 'handle-chat');
+
+    // /challenges subscription disabled — path not implemented in poker-lobby
+    // await eyreSubscribe('poker-lobby', '/challenges', 'handle-challenges');
+
+    // Open SSE stream
+    openSSE();
+
+    // Populate stats via scry
+    loadStats();
+    loadMaxHands();
+  }
+
+  // Read the Urbit CSRF token from the auth cookie (required for all Eyre PUT requests)
+  function getCSRF() {
+    const m = document.cookie.match(/urbauth-~[a-z-]+=([^;]+)/);
+    return m ? m[1] : '';
+  }
+
+  // PUT events to Eyre channel
+  async function eyrePut(events) {
+    await fetch(`/~/channel/${uid}`, {
+      method:  'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': getCSRF()
+      },
+      body: JSON.stringify(events)
+    });
+  }
+
+  // Subscribe helper
+  async function eyreSubscribe(app, path, id) {
+    await eyrePut([{
+      id:     eventId++,
+      action: 'subscribe',
+      ship:   ourShip || window.ship || '',
+      app,
+      path
+    }]);
+  }
+
+  // Subscribe to a specific ship's agent path
+  async function eyreSubscribeShip(targetShip, app, path, id) {
+    await eyrePut([{
+      id:     eventId++,
+      action: 'subscribe',
+      ship:   targetShip,
+      app,
+      path
+    }]);
+  }
+  // Poke helper
+  async function eyrePoke(app, mark, json) {
+    await eyrePut([{
+      id:     eventId++,
+      action: 'poke',
+      ship:   ourShip || window.ship || '',
+      app,
+      mark,
+      json
+    }]);
+  }
+
+  // Poke the lobby HOST ship (for chat actions)
+  async function eyrePokeHost(app, mark, json) {
+    await eyrePut([{
+      id:     eventId++,
+      action: 'poke',
+      ship:   hostShip || ourShip || window.ship || '',
+      app,
+      mark,
+      json
+    }]);
+  }
+  // Ack an SSE event
+  async function eyreAck(id) {
+    await eyrePut([{ id: eventId++, action: 'ack', 'event-id': id }]);
+  }
+
+  // Open the SSE stream and route events
+  function openSSE() {
+    let lastCount = 0;
+    async function poll() {
+      try {
+        const res = await fetch('/~/scry/poker-lobby/backlog.json');
+        if (res.ok) {
+          const msgs = await res.json();
+          if (msgs.length > lastCount) {
+            const newMsgs = msgs.slice(lastCount);
+            for (const msg of newMsgs) {
+              const ship = msg.author;
+              const isUs = (ship === ourShip || '~' + ship === ourShip);
+              appendChat(ship, msg.text, isUs);
+            }
+            lastCount = msgs.length;
+          }
+        }
+      } catch(e) {}
+      setTimeout(poll, 2000);
+    }
+    poll();
+  }
+
+  // ── Chat update handler ────────────────────────────────────────
+  function handleChatUpdate(update) {
+    if (update.message) {
+      const { ship, text, when } = update.message;
+      const isUs = (ship === ourShip || '~' + ship === ourShip);
+      appendChat('~' + ship, text, isUs);
+    } else if (update.join) {
+      appendSystemMsg(`${update.join} joined the lobby`);
+      updatePresentNow();
+    } else if (update.leave) {
+      appendSystemMsg(`${update.leave} left the lobby`);
+      updatePresentNow();
+    } else if (update['challenge-notice']) {
+      const { challenger, target } = update['challenge-notice'];
+      appendSystemMsg(`challenge: ~${challenger} → ~${target}`);
+    }
+  }
+
+  // ── Challenge notification handler ────────────────────────────
+  function handleChallengeNotify(notify) {
+    if (notify.incoming) {
+      // Someone challenged us — show the overlay
+      const { challenger, challenge } = notify.incoming;
+      showOverlay(challenger, challenge);
+    } else if (notify.accepted) {
+      // Challenge accepted — navigate to room (fires for both challenger and challengee)
+      const { target, 'room-id': roomId } = notify.accepted;
+      // target is already ~-prefixed from scot %p; strip for peer param
+      const peer = target.replace(/^~/, '');
+      cancelChallengePulse();
+      appendSystemMsg(`${target} accepted — entering private room…`);
+      setTimeout(() => {
+        window.location.href = `/apps/poker/room.html?room=${roomId}&peer=${peer}`;
+      }, 800);
+    } else if (notify.declined) {
+      cancelChallengePulse(`${notify.declined.target} declined`);
+    } else if (notify.busy) {
+      cancelChallengePulse(`${notify.busy.target} is already in a challenge`);
+    } else if (notify.timeout) {
+      cancelChallengePulse(`${notify.timeout.target} did not respond`);
+    }
+  }
+
+  // ── Scry stats ─────────────────────────────────────────────────
+  async function loadStats() {
+    try {
+      const [games, ships, present] = await Promise.all([
+        fetch('/~/scry/poker-lobby/games.json').then(r => r.json()),
+        fetch('/~/scry/poker-lobby/ships.json').then(r => r.json()),
+        fetch('/~/scry/poker-lobby/online.json').then(r => r.json())
+      ]);
+      const vals = document.querySelectorAll('.stat-value');
+      if (vals[0]) vals[0].textContent = Number(games['poker-lobby-count']).toLocaleString();
+      if (vals[1]) vals[1].textContent = Number(ships['poker-lobby-count']).toLocaleString();
+      if (vals[2]) vals[2].textContent = Number(present['poker-lobby-count']).toLocaleString();
+    } catch(e) {}
+  }
+
+  function updatePresentNow() {
+    fetch('/~/scry/poker-lobby/online.json')
+      .then(r => r.json())
+      .then(d => {
+        const vals = document.querySelectorAll('.stat-value');
+        if (vals[2]) vals[2].textContent = Number(d['poker-lobby-count']).toLocaleString();
+      }).catch(() => {});
+  }
+
+  // ── Reputation lookup ──────────────────────────────────────────
+  // maxHandsOnNetwork: loaded once on init, used for meter width
+  let maxHandsOnNetwork = 1;
+
+  async function loadMaxHands() {
+    try {
+      const res = await fetch('/~/scry/poker-lobby/max-hands.json');
+      const d   = await res.json();
+      maxHandsOnNetwork = Math.max(1, d['poker-lobby-count'] || 1);
+    } catch(e) {}
+  }
+
+  async function showRepResult() {
+    const ship = document.getElementById('shipInput').value.trim().replace(/^~/, '');
+    if (!ship) return;
+
+    document.getElementById('repShipName').textContent = '~' + ship;
+    document.getElementById('repResult').classList.add('visible');
+
+    // Reset meter while loading
+    const fill   = document.getElementById('repMeterFill');
+    const sample = document.getElementById('repSampleLabel');
+    const rate   = document.getElementById('repRateLabel');
+    fill.style.width = '0%';
+    fill.className   = 'rep-meter-fill band-blue';
+
+    try {
+      const res = await fetch(`/~/scry/poker-lobby/rep/${ship}.json`);
+      const rep = await res.json();
+
+      const hands      = rep.hands      || 0;
+      const complaints = rep.complaints || 0;
+      const balance    = rep.balance    || 0;
+
+      // Width = sample size relative to most active player
+      const widthPct = Math.min(100, Math.round((hands / maxHandsOnNetwork) * 100));
+
+      // Complaint rate = complaints / hands as percentage
+      const complaintRate = hands > 0 ? (complaints / hands) * 100 : 0;
+
+      // Color band
+      let band = 'band-blue';
+      if      (complaintRate <= 0)  band = 'band-blue';
+      else if (complaintRate <= 1)  band = 'band-green';
+      else if (complaintRate <= 3)  band = 'band-yellow';
+      else                          band = 'band-red';
+
+      // Animate fill after brief delay (allows CSS transition to fire)
+      requestAnimationFrame(() => {
+        fill.className   = `rep-meter-fill ${band}`;
+        fill.style.width = widthPct + '%';
+      });
+
+      // Rate label
+      rate.textContent = hands > 0
+        ? (complaintRate.toFixed(1) + '% complaint rate')
+        : 'no hands played';
+
+      // Sample size label
+      sample.textContent = hands > 0
+        ? `${hands.toLocaleString()} hands played — ${widthPct}% of network leader`
+        : 'no hands on record';
+
+      // Stats
+      document.getElementById('repHands').textContent      = hands.toLocaleString();
+      document.getElementById('repBalance').textContent    = balance.toLocaleString();
+      document.getElementById('repComplaints').textContent = complaints;
+
+    } catch(e) {
+      rate.textContent   = 'not found';
+      sample.textContent = '—';
+    }
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // UI FUNCTIONS (unchanged logic, now wired to real pokes)
+  // ══════════════════════════════════════════════════════════════
+
+  // ── Character counter ──────────────────────────────────────────
+  const chatInput   = document.getElementById('chatInput');
+  const charCounter = document.getElementById('charCounter');
+
+  chatInput.addEventListener('input', () => {
+    const remaining = 280 - chatInput.value.length;
+    charCounter.textContent = remaining + ' char.';
+    charCounter.className = 'char-counter' +
+      (remaining <= 0 ? ' limit' : remaining <= 40 ? ' warn' : '');
+  });
+
+  chatInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }
+  });
+
+  // Rate limiting: 3 messages per 10 seconds
+  let chatTimes = [];
+  function sendChat() {
+    const text = chatInput.value.trim();
+    if (!text) return;
+    const now = Date.now();
+    chatTimes = chatTimes.filter(t => now - t < 10000);
+    if (chatTimes.length >= 3) return; // silent rate limit
+    chatTimes.push(now);
+    // Poke poker-lobby with %poker-chat-action %message
+    eyrePokeHost('poker-lobby', 'poker-chat-action', {
+      'poker-chat-action': { message: { text } }
+    }).catch(() => {});
+    chatInput.value = '';
+    charCounter.textContent = '280 char.';
+    charCounter.className = 'char-counter';
+  }
+
+  function appendChat(author, text, isUs = false) {
+    const log = document.getElementById('chatLog');
+    const row = document.createElement('div');
+    row.className = 'chat-row';
+    const now  = new Date();
+    const time = now.getHours().toString().padStart(2,'0') + ':' +
+                 now.getMinutes().toString().padStart(2,'0');
+    row.innerHTML = `
+      <span class="chat-author" style="${isUs ? 'color:var(--gold-dim)' : ''}">${author}</span>
+      <span class="chat-text">${text}</span>
+      <span class="chat-time">${time}</span>`;
+    log.appendChild(row);
+    const rows = log.querySelectorAll('.chat-row');
+    if (rows.length > 200) rows[0].remove();
+    log.scrollTop = log.scrollHeight;
+  }
+
+  function appendSystemMsg(text) {
+    const log = document.getElementById('chatLog');
+    const row = document.createElement('div');
+    row.className = 'chat-row system';
+    row.innerHTML = `<span class="chat-text">${text}</span>`;
+    log.appendChild(row);
+    const rows = log.querySelectorAll('.chat-row');
+    if (rows.length > 200) rows[0].remove();
+    log.scrollTop = log.scrollHeight;
+  }
+
+  // ── Stakes validation ──────────────────────────────────────────
+  const sbInput = document.getElementById('smallBlind');
+  const bbInput = document.getElementById('bigBlind');
+  const mrInput = document.getElementById('minRaise');
+  const hlInput = document.getElementById('handsLimit');
+  const clInput = document.getElementById('capLimit');
+  const defaults = { sb: 1, bb: 10, mr: 10 };
+
+  sbInput.addEventListener('change', () => {
+    const sb = Math.max(parseInt(sbInput.value) || defaults.sb, defaults.sb);
+    sbInput.value = sb; defaults.bb = sb;
+    if (parseInt(bbInput.value) < sb) { bbInput.value = sb; flashSnap(bbInput); updateDependents(sb); }
+  });
+
+  bbInput.addEventListener('change', () => {
+    const bb = Math.max(parseInt(bbInput.value) || defaults.bb, defaults.bb);
+    bbInput.value = bb; updateDependents(bb);
+  });
+
+  bbInput.addEventListener('input', () => {
+    const bb = parseInt(bbInput.value);
+    if (!isNaN(bb) && bb > 0 && parseInt(mrInput.value) === defaults.mr) mrInput.value = bb;
+  });
+
+  function updateDependents(bb) {
+    defaults.mr = bb; mrInput.min = bb;
+    if (parseInt(mrInput.value) < bb) { mrInput.value = bb; flashSnap(mrInput); }
+  }
+
+  function flashSnap(input) {
+    input.classList.add('snapped');
+    setTimeout(() => input.classList.remove('snapped'), 1200);
+  }
+
+  function validateStakes() {
+    const errors = [];
+    if ((parseInt(sbInput.value)||0) < defaults.sb) { sbInput.value = defaults.sb; flashSnap(sbInput); errors.push(`small blind min ${defaults.sb}`); }
+    if ((parseInt(bbInput.value)||0) < defaults.bb) { bbInput.value = defaults.bb; flashSnap(bbInput); errors.push(`big blind min ${defaults.bb}`); }
+    if ((parseInt(mrInput.value)||0) < defaults.mr) { mrInput.value = defaults.mr; flashSnap(mrInput); errors.push(`min raise min ${defaults.mr}`); }
+    // At least one of hands or cap must be set
+    const hands = parseInt(hlInput.value);
+    const cap   = parseInt(clInput.value);
+    const hasHands = !isNaN(hands) && hands > 0;
+    const hasCap   = !isNaN(cap)   && cap   > 0;
+    if (!hasHands && !hasCap) {
+      hlInput.classList.add('snapped'); clInput.classList.add('snapped');
+      setTimeout(() => { hlInput.classList.remove('snapped'); clInput.classList.remove('snapped'); }, 1200);
+      errors.push('set hands or total cap to end session');
+    }
+    if (errors.length > 0) { showValidationOverlay(errors); return false; }
+    return true;
+  }
+
+  let validationTimer = null;
+  function showValidationOverlay(errors) {
+    const overlay = document.getElementById('validationOverlay');
+    document.getElementById('validationMsg').textContent = errors.join(' · ');
+    overlay.classList.remove('dissolving');
+    overlay.classList.add('active');
+    if (validationTimer) clearTimeout(validationTimer);
+    validationTimer = setTimeout(() => {
+      overlay.classList.add('dissolving');
+      setTimeout(() => { overlay.classList.remove('active', 'dissolving'); }, 600);
+    }, 5000);
+  }
+
+  // ── Challenge — send ───────────────────────────────────────────
+  let challengeWaiting = false;
+  let challengeWaitTimer = null;
+
+  function sendChallenge() {
+    if (!validateStakes()) return;
+    const btn    = document.getElementById('challengeBtn');
+    const target = document.getElementById('shipInput').value.trim().replace(/^~/, '');
+    if (!target || challengeWaiting) return;
+
+    challengeWaiting = true;
+    btn.classList.add('waiting');
+    btn.textContent = 'Waiting…';
+
+    const hands = parseInt(hlInput.value);
+    const cap   = parseInt(clInput.value);
+
+    eyrePoke('poker-lobby', 'poker-send-challenge', {
+      'poker-send-challenge': {
+        target,
+        'small-blind': parseInt(sbInput.value),
+        'big-blind':   parseInt(bbInput.value),
+        'min-raise':   parseInt(mrInput.value),
+        'buy-in':      parseInt(document.getElementById('buyIn').value) || parseInt(bbInput.value) * 50,
+        'hands':       (!isNaN(hands) && hands > 0) ? hands : null,
+        'cap':         (!isNaN(cap)   && cap   > 0) ? cap   : null
+      }
+    }).catch(() => cancelChallengePulse('send failed'));
+
+    // 60-second client-side timeout
+    challengeWaitTimer = setTimeout(() =>
+      cancelChallengePulse(`~${target} did not respond`), 60000);
+  }
+
+  function cancelChallengePulse(msg) {
+    const btn = document.getElementById('challengeBtn');
+    challengeWaiting = false;
+    btn.classList.remove('waiting');
+    btn.textContent = 'Challenge';
+    if (challengeWaitTimer) clearTimeout(challengeWaitTimer);
+    if (msg) appendSystemMsg(msg);
+  }
+
+  // ── Challenge overlay — incoming ───────────────────────────────
+  let overlayTimerInterval = null;
+  let overlaySeconds = 60;
+  let decliningMode  = false;
+  let pendingIncoming = null; // { challenger, challenge }
+
+  function showOverlay(challenger, challenge) {
+    pendingIncoming = { challenger, challenge };
+
+    // Soft ping
+    try {
+      const ctx  = new (window.AudioContext || window.webkitAudioContext)();
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(660, ctx.currentTime + 0.3);
+      gain.gain.setValueAtTime(0.12, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+      osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.5);
+    } catch(e) {}
+
+    // Populate overlay with challenger info
+    document.querySelector('.overlay-challenger').innerHTML =
+      `<span>from</span>~${challenger}`;
+    if (challenge) {
+      document.getElementById('overlaySB').textContent    = challenge['small-blind'] || '—';
+      document.getElementById('overlayBB').textContent    = challenge['big-blind']   || '—';
+      document.getElementById('overlayHands').textContent = challenge['hands']       || '—';
+      document.getElementById('overlayCap').textContent   = challenge['cap']         || '—';
+    }
+
+    overlaySeconds = 60; decliningMode = false;
+    document.getElementById('declineArea').classList.remove('visible');
+    document.getElementById('confirmDeclineBtn').classList.remove('visible');
+    document.getElementById('overlayButtons').style.display = 'flex';
+    document.getElementById('overlayTimer').className = 'overlay-timer';
+    updateTimerDisplay();
+    document.getElementById('challengeOverlay').classList.add('active');
+    document.getElementById('challengeOverlay').classList.remove('dissolving');
+
+    overlayTimerInterval = setInterval(() => {
+      overlaySeconds--;
+      updateTimerDisplay();
+      if (overlaySeconds <= 10) document.getElementById('overlayTimer').className = 'overlay-timer urgent';
+      if (overlaySeconds <= 0) dissolveOverlay();
+    }, 1000);
+  }
+
+  function updateTimerDisplay() {
+    const m = Math.floor(overlaySeconds / 60);
+    const s = (overlaySeconds % 60).toString().padStart(2, '0');
+    document.getElementById('overlayTimer').textContent = `${m}:${s}`;
+  }
+
+  function dissolveOverlay() {
+    clearInterval(overlayTimerInterval);
+    const el = document.getElementById('challengeOverlay');
+    el.classList.add('dissolving');
+    setTimeout(() => { el.classList.remove('active', 'dissolving'); }, 600);
+    pendingIncoming = null;
+  }
+
+  function acceptChallenge() {
+    if (!pendingIncoming) return;
+    const { challenger } = pendingIncoming;
+    // Poke %poker-accept-challenge with the challenger's ship name.
+    // The lobby generates the room-id server-side and sends an %accepted
+    // notify back on /challenges; handleChallengeNotify navigates to the room.
+    eyrePoke('poker-lobby', 'poker-accept-challenge', {
+      'poker-accept-challenge': challenger
+    }).then(() => {
+      dissolveOverlay();
+      appendSystemMsg(`accepted — waiting for room…`);
+    }).catch(() => {});
+  }
+
+  function initiateDecline() {
+    if (decliningMode) return;
+    decliningMode = true;
+    document.getElementById('declineArea').classList.add('visible');
+    document.getElementById('overlayButtons').style.display = 'none';
+    document.getElementById('confirmDeclineBtn').classList.add('visible');
+  }
+
+  function confirmDecline() {
+    if (!pendingIncoming) return;
+    // Poke %poker-decline-challenge with the challenger's ship name.
+    eyrePoke('poker-lobby', 'poker-decline-challenge', {
+      'poker-decline-challenge': pendingIncoming.challenger
+    }).catch(() => {});
+    dissolveOverlay();
+  }
+
+  function showRewardsOverlay() {
+    document.getElementById('rewardsOverlay').classList.add('active');
+  }
+
+  function closeRewardsOverlay() {
+    document.getElementById('rewardsOverlay').classList.remove('active');
+  }
+
+  // ── Post-room complaint window ─────────────────────────────────
+  // Activated when returning from a room via URL param ?complaint-peer=~ship
+  // Also callable programmatically: activateComplaintWindow(ship, roomId)
+
+  let complaintWindowTimer   = null;
+  let complaintWindowSeconds = 60;
+  let complaintPeer          = null;
+  let complaintRoomId        = null;
+
+  function activateComplaintWindow(peer, roomId) {
+    complaintPeer   = peer;
+    complaintRoomId = roomId;
+    complaintWindowSeconds = 60;
+
+    document.getElementById('lobbyComplaintTarget').textContent = '~' + peer;
+    const area = document.getElementById('complaintReturnArea');
+    area.style.display = 'block';
+    updateComplaintCountdown();
+
+    complaintWindowTimer = setInterval(() => {
+      complaintWindowSeconds--;
+      updateComplaintCountdown();
+      if (complaintWindowSeconds <= 0) dismissComplaintWindow();
+    }, 1000);
+  }
+
+  function updateComplaintCountdown() {
+    const m   = Math.floor(complaintWindowSeconds / 60);
+    const s   = (complaintWindowSeconds % 60).toString().padStart(2, '0');
+    const el  = document.getElementById('complaintCountdown');
+    el.textContent = `${m}:${s}`;
+    el.className = 'complaint-countdown' + (complaintWindowSeconds <= 10 ? ' urgent' : '');
+  }
+
+  function dismissComplaintWindow() {
+    clearInterval(complaintWindowTimer);
+    const area = document.getElementById('complaintReturnArea');
+    area.style.opacity = '0';
+    area.style.transition = 'opacity 0.5s';
+    setTimeout(() => {
+      area.style.display = 'none';
+      area.style.opacity = '1';
+    }, 500);
+    complaintPeer = null;
+  }
+
+  function showLobbyComplaint() {
+    if (!complaintPeer) return;
+    // Reset radio selection
+    document.querySelectorAll('input[name="lobby-complaint"]').forEach(r => r.checked = false);
+    document.getElementById('lobbyComplaintOverlay').classList.add('active');
+  }
+
+  function closeLobbyComplaint() {
+    document.getElementById('lobbyComplaintOverlay').classList.remove('active');
+  }
+
+  async function fileLobbyComplaint() {
+    const selected = document.querySelector('input[name="lobby-complaint"]:checked');
+    if (selected && complaintPeer) {
+      try {
+        await eyrePokeHost('poker-lobby', 'poker-chat-action', {
+          'poker-chat-action': {
+            complaint: {
+              against:   complaintPeer,
+              category:  selected.value,
+              'room-id': complaintRoomId || ''
+            }
+          }
+        });
+      } catch(e) {}
+    }
+    closeLobbyComplaint();
+    dismissComplaintWindow();
+  }
+
+  // On load — check if we returned from a room with a complaint peer
+  function checkReturnFromRoom() {
+    const p = new URLSearchParams(window.location.search);
+    const peer   = p.get('complaint-peer');
+    const roomId = p.get('room-id');
+    if (peer) {
+      // Clean URL without reloading
+      window.history.replaceState({}, '', window.location.pathname);
+      activateComplaintWindow(peer.replace(/^~/, ''), roomId || '');
+    }
+  }
+
+  // ── How to Play overlay ────────────────────────────────────────
+  function showHowTo() {
+    const el = document.getElementById('howtoOverlay');
+    el.classList.remove('dissolving');
+    el.classList.add('active');
+  }
+
+  function closeHowTo() {
+    const el = document.getElementById('howtoOverlay');
+    el.classList.add('dissolving');
+    setTimeout(() => { el.classList.remove('active', 'dissolving'); }, 500);
+  }
+
+  // ── Init ───────────────────────────────────────────────────────
+  window.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('howtoOverlay').addEventListener('click', function(e) {
+      if (e.target === this) closeHowTo();
+    });
+    document.getElementById('rewardsOverlay').addEventListener('click', function(e) {
+      if (e.target === this) closeRewardsOverlay();
+    });
+    document.getElementById('chatLog').scrollTop = 99999;
+    checkReturnFromRoom();
+    openChannel();
+  });
+
+  // Dev key: D triggers fake incoming challenge for overlay testing
+  document.addEventListener('keydown', e => {
+    if (e.key === 'd') showOverlay('wicdev-wisryt', {
+      'room-id': '0x1234', 'small-blind': 10, 'big-blind': 20, 'hands': 20, 'cap': null
+    });
+  });
+</script>
+<!-- ══ HOW TO PLAY OVERLAY ════════════════════════════════════════ -->
+<div class="howto-overlay" id="howtoOverlay">
+  <div class="howto-card">
+
+    <div class="howto-header">
+      <div class="howto-title">Head-Up Poker — How to Play</div>
+      <button class="howto-close" onclick="closeHowTo()">Close</button>
+    </div>
+
+    <div class="howto-body">
+
+      <div class="howto-lead">
+        <p>No house.<br>No rake.<br>No server.<br>No eye in the sky.<br>Unbreakable cryptography.</p>
+        <div class="howto-prose">Gaming is peer-to-peer. Rooms are 1:1 play. Stakes are Fhloston coins — play money issued freely to every player. There is no real-money risk.</div>
+      </div>
+
+      <div class="howto-section">
+        <div class="howto-section-title">Fair Gaming</div>
+        <div class="howto-prose">Cards are shuffled using SRA — a commutative encryption protocol built on a 2,048-bit prime modulus drawn from RFC 3526 Group 14, the same standard used by modern TLS, providing 112 bits of effective security. Neither player ever sees the other's hole cards until showdown, and neither player — nor the server — can predict or manipulate the order of the deck. Each card is encrypted independently by both players and revealed only when dealt, with no trusted third party required. All communications are authenticated via Urbit's Ames protocol using Curve25519 elliptic curve cryptography at 128 bits of security — estimated cracking times exceed the age of the universe. Cheating is not a matter of trust. It is a matter of mathematics. It is impossible.</div>
+      </div>
+
+      <div class="howto-section">
+        <div class="howto-section-title">How to Find a Game</div>
+        <div class="howto-prose">Browse the lobby chat to get a feel for who's around. Use the Reputation lookup to check a ship's history before you commit. Enter their ship name in the Challenge field, set your stakes, and send the challenge.</div>
+      </div>
+
+      <div class="howto-section">
+        <div class="howto-section-title">Stakes</div>
+        <div class="howto-prose">You set five parameters before a challenge: small blind, big blind, minimum raise, and at least one session limit — a number of hands, a total chip cap, or both. These cannot be altered once a challenge is accepted. The room dissolves automatically when the first limit is reached. Fhloston coins are issued freely upon entry and are valid here only.</div>
+        <br>
+        <div class="howto-prose">The small blind and big blind are mandatory opening bets posted before cards are dealt. The big blind is typically twice the small blind. Blinds ensure there is always a worthy pot, and prevent players from continuously folding.</div>
+      </div>
+
+      <div class="howto-section">
+        <div class="howto-section-title">Accepting a Challenge</div>
+        <div class="howto-prose">When a challenge arrives you'll hear a soft tone and see a notification. You have sixty seconds to accept or decline. A comment field allows those who decline to counter with more acceptable terms.</div>
+      </div>
+
+      <div class="howto-section">
+        <div class="howto-section-title">At the Table</div>
+        <div class="howto-prose">Standard Texas Hold'em rules apply. Two hole cards, five community cards, best five-card hand wins. The challenged party posts the big blind. The challenger is the dealer and posts the small blind, acting first before the flop. The button alternates each hand thereafter.</div>
+      </div>
+
+      <div class="howto-section">
+        <div class="howto-section-title">Reputation</div>
+        <div class="howto-prose">Every completed hand updates both players' reputation scores. Complaints can be filed for abusive behavior. Your reputation is visible to everyone in the lobby and travels with you while on Fhloston.</div>
+      </div>
+
+      <div class="howto-section">
+        <div class="howto-section-title">Built to Grow</div>
+        <div class="howto-prose">Head-Up Poker architecture supports signed hand histories, cryptographic dispute resolution, and a complete blockchain audit trail for every hand ever played. Bridging to existing chains for real-money escrow and wagering are legal decisions, not engineering ones.</div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ══ REWARDS OVERLAY ═══════════════════════════════════════════ -->
+<div class="rewards-overlay" id="rewardsOverlay">
+  <div class="rewards-card">
+    <div class="rewards-title">Fhloston Rewards</div>
+    <div class="rewards-msg">You have no rewards.</div>
+    <button class="rewards-close" onclick="closeRewardsOverlay()">Close</button>
+  </div>
+</div>
+
+</body>
+<div class="broken-overlay" id="lobbyComplaintOverlay">
+  <div class="broken-card">
+    <div class="broken-header">
+      <div class="broken-title">File a Complaint</div>
+      <div class="broken-by">
+        against <span class="ship-name" id="lobbyComplaintTarget">~unknown</span>
+      </div>
+    </div>
+    <div class="broken-body">
+      <div>
+        <div class="complaint-label">Select a category</div>
+        <div class="complaint-radios">
+          <label class="complaint-radio">
+            <input type="radio" name="lobby-complaint" value="slow-play">
+            <span class="radio-mark"></span>
+            <span class="radio-text">Slow Play</span>
+          </label>
+          <label class="complaint-radio">
+            <input type="radio" name="lobby-complaint" value="abusive-language">
+            <span class="radio-mark"></span>
+            <span class="radio-text">Abusive Language</span>
+          </label>
+          <label class="complaint-radio">
+            <input type="radio" name="lobby-complaint" value="premature-disconnect">
+            <span class="radio-mark"></span>
+            <span class="radio-text">Premature Disconnect</span>
+          </label>
+          <label class="complaint-radio">
+            <input type="radio" name="lobby-complaint" value="failure-to-pay">
+            <span class="radio-mark"></span>
+            <span class="radio-text">Failure to Pay</span>
+          </label>
+        </div>
+      </div>
+      <div class="complaint-notice">
+        Complaints are private and visible only to the star operator.
+      </div>
+    </div>
+    <div class="broken-footer">
+      <button class="broken-btn btn-no-complaint" onclick="closeLobbyComplaint()">Cancel</button>
+      <button class="broken-btn btn-file-complaint" onclick="fileLobbyComplaint()">File Complaint</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
+
+

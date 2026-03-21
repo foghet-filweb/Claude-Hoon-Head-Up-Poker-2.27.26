@@ -1,0 +1,10 @@
+:~
+  title+'Fhloston Poker'
+  info+'Peer-to-peer poker on Urbit. No rake, no servers.'
+  color+0xc9.a84c
+  version+[0 1 0]
+  website+'https://poker.urbit.org'
+  license+'MIT'
+  base+'poker'
+  glob-http+['http://64.227.102.14:8888/glob-0v6d2uo.rb8rb.ul19f.lmjg8.ttcn6.glob' 0v6d2uo.rb8rb.ul19f.lmjg8.ttcn6]
+==
