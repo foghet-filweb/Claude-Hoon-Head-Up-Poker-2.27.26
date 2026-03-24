@@ -137,7 +137,11 @@
           :~  [%give %fact ~[/game] %poker-room-update !>([%hand-dealt our.bowl decrypted])]
               [%pass twire %arvo %b %rest (add now.bowl ~m1)]
           ==
-        %mp-reveal-key  !!
+        %mp-reveal-key
+          ~>  %slog.[0 leaf+"poker-room: key reveal received from peer"]
+          :_  this
+          :~  [%give %fact ~[/game] %poker-room-update !>([%key-revealed peer])]
+          ==
         %abort
           :_  this
           :~  [%give %fact ~[/game] %poker-room-update !>([%timeout-forfeit peer])]
@@ -177,6 +181,8 @@
           ==
         %call
           =/  to-call  (sub peer-bet.room-state.state our-bet.room-state.state)
+          ~|  'do-call: insufficient stack'
+          ?>  (gte our-stack.room-state.state to-call)
           =.  our-stack.room-state.state  (sub our-stack.room-state.state to-call)
           =.  our-bet.room-state.state    (add our-bet.room-state.state to-call)
           =.  pot.room-state.state        (add pot.room-state.state to-call)
@@ -197,8 +203,30 @@
           ==
       ==
   ==
-++  on-agent  |=([=wire =sign:agent:gall] !!)
-++  on-arvo   |=([=wire s=sign-arvo] !!)
+++  on-agent
+  |=  [=wire =sign:agent:gall]
+  ^-  (quip card _this)
+  ?+  -.sign  (on-agent:def wire sign)
+    %poke-ack
+      ?~  p.sign
+        `this
+      %-  (slog leaf+"poker-room: poke nack on wire {<wire>}" u.p.sign)
+      `this
+  ==
+++  on-arvo
+  |=  [=wire s=sign-arvo]
+  ^-  (quip card _this)
+  ?+  wire  (on-arvo:def wire s)
+    [%timeout @ ~]
+      ?.  ?=([%b %wake *] s)  (on-arvo:def wire s)
+      =/  peer  peer.room-state.state
+      =.  phase.room-state.state  [%abandoned ~]
+      :_  this
+      :~  [%give %fact ~[/game] %poker-room-update !>([%timeout-forfeit peer])]
+          [%pass /peer %agent [peer %poker-room] %poke %poker-deal-action !>([%abort 'timeout'])]
+          [%give %kick ~[/game] ~]
+      ==
+  ==
 ++  on-watch  |=(=path `this)
 ++  on-leave  |=(=path `this)
 ++  on-peek   |=(=path ~)

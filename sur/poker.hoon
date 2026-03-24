@@ -152,6 +152,7 @@
       ==
       [%awaiting-audit winner=@p]
       [%audited audit=audit-record]
+      [%abandoned ~]
   ==
 
 ::  +$ room-state: full state of a %poker-room agent instance
@@ -280,6 +281,7 @@
       [%hand-complete alice-result=* bob-result=* outcome=*]
       [%game-audited audit=audit-record]
       [%player-folded ship=@p]
+      [%key-revealed peer=@p]
       [%timeout-forfeit winner=@p]
       [%session-over reason=?(%hands-limit %cap-limit) hands-played=@ud total-wagered=@ud]
   ==
