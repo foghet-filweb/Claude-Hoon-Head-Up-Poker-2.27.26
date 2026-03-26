@@ -200,6 +200,64 @@
           :~  [%give %fact ~[/game] %poker-room-update !>([%hand-dealt our.bowl decrypted])]
               [%pass twire %arvo %b %rest (add now.bowl ~m1)]
           ==
+        %street-action
+          =/  rs0  room-state.state
+          ?.  ?=([%live *] phase.rs0)
+            `this
+          =/  ss   street-status.phase.rs0
+          =/  str  street.phase.rs0
+          =/  act  action.action
+          =/  peer-actor  ?:(=(role.state %alice) %bob %alice)
+          =/  our-actor   ?:(=(role.state %alice) %alice %bob)
+          ?+  -.act  `this
+            %fold
+              =/  rs1
+                rs0(our-stack (add our-stack.rs0 pot.rs0), pot 0, phase [%awaiting-audit our.bowl])
+              =.  state  [%0 rs1 role.state]
+              :_  this
+              :~  [%give %fact ~[/game] %poker-room-update !>([%player-folded peer])]
+              ==
+            %check
+              =/  ss1
+                ?:  =(peer-actor %alice)
+                  ss(actor our-actor, alice-acted %.y)
+                ss(actor our-actor)
+              =/  street-done=?
+                ?&  ?=(~ last-aggressor.ss1)
+                    alice-acted.ss1
+                ==
+              =/  rs1  rs0(phase [%live str ss1])
+              =.  state  [%0 rs1 role.state]
+              :_  this
+              ?:  street-done
+                ::  both checked — Phase 3 will advance street
+                :~  [%give %fact ~[/game] %poker-room-update !>([%peer-acted act ss1 pot.rs1 0 peer-bet.rs1])]
+                ==
+              :~  [%give %fact ~[/game] %poker-room-update !>([%peer-acted act ss1 pot.rs1 0 peer-bet.rs1])]
+                  [%give %fact ~[/game] %poker-room-update !>([%your-turn str ss1 pot.rs1 0 min-raise.config.rs1])]
+              ==
+            %call
+              =/  to-call  (sub our-bet.rs0 peer-bet.rs0)
+              =/  rs1
+                rs0(peer-stack (sub peer-stack.rs0 to-call), peer-bet (add peer-bet.rs0 to-call), pot (add pot.rs0 to-call))
+              ::  street complete after call — Phase 3 will advance street
+              =.  state  [%0 rs1 role.state]
+              :_  this
+              :~  [%give %fact ~[/game] %poker-room-update !>([%peer-acted act ss pot.rs1 0 peer-bet.rs1])]
+              ==
+            %raise
+              =/  amount  amount.act
+              =/  rs1
+                rs0(peer-stack (sub peer-stack.rs0 amount), peer-bet (add peer-bet.rs0 amount), pot (add pot.rs0 amount))
+              =/  ss1  ss(actor our-actor, last-aggressor `peer-actor)
+              =/  rs2  rs1(phase [%live str ss1])
+              =/  to-call  (sub peer-bet.rs2 our-bet.rs2)
+              =.  state  [%0 rs2 role.state]
+              :_  this
+              :~  [%give %fact ~[/game] %poker-room-update !>([%peer-acted act ss1 pot.rs2 to-call peer-bet.rs2])]
+                  [%give %fact ~[/game] %poker-room-update !>([%your-turn str ss1 pot.rs2 to-call min-raise.config.rs2])]
+              ==
+          ==
         %mp-reveal-key
           ~>  %slog.[0 leaf+"poker-room: key reveal received from peer"]
           :_  this
@@ -226,6 +284,11 @@
       =/  rs0  room-state.state
       =/  ph  phase.rs0
       ?>  ?=([%live *] ph)
+      ::  enforce turn order — drop if it's not our turn
+      =/  our-actor  ?:(=(role.state %alice) %alice %bob)
+      =/  peer-actor=?(%alice %bob)  ?:(=(role.state %alice) %bob %alice)
+      ?.  =(actor.street-status.ph our-actor)
+        `this
       =/  peer  peer.rs0
       ?+  -.action  `this
         %fold
@@ -233,13 +296,18 @@
           =/  rs1  rs0(peer-stack new-peer-stack, pot 0, phase [%awaiting-audit peer])
           =.  state  [%0 rs1 role.state]
           :_  this
-          :~  [%pass /peer %agent [peer %poker-room] %poke %poker-game-action !>([%fold ~])]
+          :~  [%pass /peer %agent [peer %poker-room] %poke %poker-deal-action !>([%street-action action])]
               [%give %fact ~[/game] %poker-room-update !>([%player-folded our.bowl])]
               [%pass /peer %agent [peer %poker-room] %poke %poker-deal-action !>([%mp-reveal-key d:(need our-key.rs0) `@ux`0])]
           ==
         %check
+          =/  ss1
+            ?:  =(our-actor %alice)
+              street-status.ph(actor peer-actor, alice-acted %.y)
+            street-status.ph(actor peer-actor)
+          =.  phase.room-state.state  [%live street.ph ss1]
           :_  this
-          :~  [%pass /peer %agent [peer %poker-room] %poke %poker-game-action !>([%check ~])]
+          :~  [%pass /peer %agent [peer %poker-room] %poke %poker-deal-action !>([%street-action action])]
               [%give %fact ~[/game] %poker-room-update !>([%player-checked our.bowl])]
           ==
         %call
@@ -250,7 +318,7 @@
           =.  our-bet.room-state.state    (add our-bet.room-state.state to-call)
           =.  pot.room-state.state        (add pot.room-state.state to-call)
           :_  this
-          :~  [%pass /peer %agent [peer %poker-room] %poke %poker-game-action !>([%call ~])]
+          :~  [%pass /peer %agent [peer %poker-room] %poke %poker-deal-action !>([%street-action action])]
               [%give %fact ~[/game] %poker-room-update !>([%player-called our.bowl to-call])]
           ==
         %raise
@@ -260,8 +328,10 @@
           =.  our-stack.room-state.state  (sub our-stack.room-state.state amount)
           =.  our-bet.room-state.state    (add our-bet.room-state.state amount)
           =.  pot.room-state.state        (add pot.room-state.state amount)
+          =/  ss1  street-status.ph(actor peer-actor, last-aggressor `our-actor)
+          =.  phase.room-state.state  [%live street.ph ss1]
           :_  this
-          :~  [%pass /peer %agent [peer %poker-room] %poke %poker-game-action !>([%raise amount])]
+          :~  [%pass /peer %agent [peer %poker-room] %poke %poker-deal-action !>([%street-action action])]
               [%give %fact ~[/game] %poker-room-update !>([%player-raised our.bowl amount])]
           ==
       ==
