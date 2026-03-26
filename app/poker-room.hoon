@@ -223,7 +223,7 @@
                   pot           0
                   phase         [%awaiting-audit our.bowl]
                   hands-played  (add hands-played.rs0 1)
-                  total-wagered (add total-wagered.rs0 pot.rs0)
+                  total-wagered  (add total-wagered.rs0 pot.rs0)
                 ==
               =.  state  [%0 rs1 role.state]
               :_  this
@@ -345,7 +345,7 @@
               pot           0
               phase         [%awaiting-audit peer]
               hands-played  (add hands-played.rs0 1)
-              total-wagered (add total-wagered.rs0 pot.rs0)
+              total-wagered  (add total-wagered.rs0 pot.rs0)
             ==
           =.  state  [%0 rs1 role.state]
           :_  this
