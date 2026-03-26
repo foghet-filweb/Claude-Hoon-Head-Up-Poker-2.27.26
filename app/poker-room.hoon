@@ -9,6 +9,35 @@
       =room-state:poker
       role=role
   ==
+++  advance-street
+  ::  Compute our partial decrypts of the next street's community positions,
+  ::  send %mp-community to peer, and transition phase to %revealing.
+  |=  rs=room-state:poker
+  ^-  (quip card room-state:poker)
+  ?>  ?=([%live *] phase.rs)
+  =/  cur  street.phase.rs
+  =/  next-str=street:poker
+    ?-  cur
+      %preflop   %flop
+      %flop      %turn
+      %turn      %river
+      %river     %showdown
+      %showdown  !!
+    ==
+  =/  positions=(list @ud)
+    ?-  next-str
+      %flop      ~[4 5 6]
+      %turn      ~[7]
+      %river     ~[8]
+      %preflop   ~
+      %showdown  ~
+    ==
+  =/  our-key  (need our-key.rs)
+  =/  partials  (partial-decrypt-positions:poker-sra dbl-enc-deck.rs positions our-key)
+  =/  rs1  rs(phase [%revealing next-str positions])
+  :_  rs1
+  :~  [%pass /peer %agent [peer.rs %poker-room] %poke %poker-deal-action !>([%mp-community next-str partials])]
+  ==
 --
 =|  state-0
 =*  state  -
@@ -432,33 +461,4 @@
 ++  on-leave  |=(=path `this)
 ++  on-peek   |=(=path ~)
 ++  on-fail   on-fail:def
-++  advance-street
-  ::  Compute our partial decrypts of the next street's community positions,
-  ::  send %mp-community to peer, and transition phase to %revealing.
-  |=  rs=room-state:poker
-  ^-  (quip card room-state:poker)
-  ?>  ?=([%live *] phase.rs)
-  =/  cur  street.phase.rs
-  =/  next-str=street:poker
-    ?-  cur
-      %preflop   %flop
-      %flop      %turn
-      %turn      %river
-      %river     %showdown
-      %showdown  !!
-    ==
-  =/  positions=(list @ud)
-    ?-  next-str
-      %flop      ~[4 5 6]
-      %turn      ~[7]
-      %river     ~[8]
-      %preflop   ~
-      %showdown  ~
-    ==
-  =/  our-key  (need our-key.rs)
-  =/  partials  (partial-decrypt-positions:poker-sra dbl-enc-deck.rs positions our-key)
-  =/  rs1  rs(phase [%revealing next-str positions])
-  :_  rs1
-  :~  [%pass /peer %agent [peer.rs %poker-room] %poke %poker-deal-action !>([%mp-community next-str partials])]
-  ==
 --
