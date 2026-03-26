@@ -222,7 +222,7 @@
                   our-stack     (add our-stack.rs0 pot.rs0)
                   pot           0
                   phase         [%awaiting-audit our.bowl]
-                  hands-played  +(hands-played.rs0)
+                  hands-played  (add hands-played.rs0 1)
                   total-wagered (add total-wagered.rs0 pot.rs0)
                 ==
               =.  state  [%0 rs1 role.state]
@@ -344,7 +344,7 @@
               peer-stack    new-peer-stack
               pot           0
               phase         [%awaiting-audit peer]
-              hands-played  +(hands-played.rs0)
+              hands-played  (add hands-played.rs0 1)
               total-wagered (add total-wagered.rs0 pot.rs0)
             ==
           =.  state  [%0 rs1 role.state]
