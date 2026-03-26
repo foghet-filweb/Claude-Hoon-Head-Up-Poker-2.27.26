@@ -168,31 +168,29 @@
   |=  old=vase
   ^-  (quip card _this)
   =/  versioned  !<(versioned-state old)
-  =/  as-v1=mint-state-v1
+  =/  migrated=mint-state
     ?-  -.versioned
       %0
-        :*  %1
+        =/  issued=@ud  (mul (lent ~(tap in claimed.versioned)) allocation.versioned)
+        :*  %2
             allocation.versioned
             claimed.versioned
             paused.versioned
             our-life.versioned
             our-ring.versioned
             ~
+            slab-hard-cap
+            issued
         ==
-      %1  versioned
-      %2  !!
-    ==
-  =/  migrated=mint-state
-    ?-  -.versioned
-      ?(%0 %1)
-        =/  issued=@ud  (mul (lent ~(tap in claimed.as-v1)) allocation.as-v1)
+      %1
+        =/  issued=@ud  (mul (lent ~(tap in claimed.versioned)) allocation.versioned)
         :*  %2
-            allocation.as-v1
-            claimed.as-v1
-            paused.as-v1
-            our-life.as-v1
-            our-ring.as-v1
-            lobby-host.as-v1
+            allocation.versioned
+            claimed.versioned
+            paused.versioned
+            our-life.versioned
+            our-ring.versioned
+            lobby-host.versioned
             slab-hard-cap
             issued
         ==

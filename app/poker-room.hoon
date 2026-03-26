@@ -1,6 +1,6 @@
 ::  /app/poker-room.hoon
 /-  poker
-/+  default-agent, poker-sra
+/+  default-agent, dbug, poker-sra
 |%
 +$  role    ?(%alice %bob)
 +$  card    card:agent:gall
@@ -12,6 +12,7 @@
 --
 =|  state-0
 =*  state  -
+%-  agent:dbug
 ^-  agent:gall
 |_  =bowl:gall
 +*  this  .
@@ -39,7 +40,7 @@
             peer=peer.init
             config=config.init
             method=[%mental-poker sra-prime:poker-sra]
-            phase=[%awaiting-seeds `our-seed ~]
+            phase=?:(=(my-role %alice) [%awaiting-seeds `our-seed ~] [%awaiting-seeds ~ `our-seed])
             our-stack=1.000
             peer-stack=1.000
             pot=0
@@ -58,16 +59,63 @@
         ==
       =.  state  [%0 new-state my-role]
       :_  this
-      :~  [%pass /peer %agent [peer.new-state %poker-room] %poke %poker-deal-action !>([%mp-partial-dec ~])]
+      :~  [%pass /peer %agent [peer.new-state %poker-room] %poke %poker-deal-action !>([%mp-seed seed=our-seed])]
           [%pass timeout-wire.new-state %arvo %b %wait (add now.bowl ~m1)]
       ==
     %poker-deal-action
       =/  action  !<(deal-action:poker vase)
-      ~|  'poker-room: poke from unknown ship'
-      ?>  =(src.bowl peer.room-state.state)
+      ?.  |(?=(%mp-seed -.action) =(src.bowl peer.room-state.state))
+        `this
       =/  peer  peer.room-state.state
       =/  twire  timeout-wire.room-state.state
       ?+  -.action  `this
+        %mp-seed
+          =/  rs0  room-state.state
+          ::  drop silently if not awaiting seeds (late or duplicate delivery)
+          ?.  ?=([%awaiting-seeds *] phase.rs0)
+            `this
+          ::  store peer's seed in the slot we don't own
+          =/  ph1
+            ?:  =(role.state %alice)
+              phase.rs0(bob-seed `seed.action)
+            phase.rs0(alice-seed `seed.action)
+          ::  extract own seed before ?~ guards narrow ph1's type
+          =/  my-seed=@uv  ?:(=(role.state %alice) (need alice-seed.ph1) (need bob-seed.ph1))
+          =/  peer-seed=@uv  seed.action
+          ::  defensive: if our own slot is somehow empty, persist and wait
+          ?~  alice-seed.ph1
+            `this(room-state.state rs0(phase ph1))
+          ?~  bob-seed.ph1
+            `this(room-state.state rs0(phase ph1))
+          ::  both seeds present — combine and advance
+          =/  combined  (mix my-seed peer-seed)
+          ?:  =(role.state %alice)
+            ::  alice: shuffle plaintext deck, encrypt, commit, send to bob
+            ::  re-send alice's own seed first so bob can combine if he missed it
+            =/  our-key  (need our-key.rs0)
+            =/  pairs
+              %+  turn  (gulf 0 51)
+              |=  n=@ud
+              [(shax (mix combined n)) n]
+            =/  plain-deck
+              ^-  enc-deck:poker
+              %+  turn
+                (sort pairs |=([a=[@ @] b=[@ @]] (lth -.a -.b)))
+              |=([k=@ v=@ud] `enc-card:poker``@ux`v)
+            =/  enc  (reencrypt-deck:poker-sra plain-deck our-key)
+            =/  com  (commit-deck:poker-sra enc room-id.rs0)
+            :_  this(room-state.state rs0(phase [%bob-reencrypting enc-deck=enc alice-commit=com]))
+            :~  [%pass /peer %agent [peer %poker-room] %poke %poker-deal-action !>([%mp-seed seed=my-seed])]
+                [%pass /peer %agent [peer %poker-room] %poke %poker-deal-action !>([%mp-enc-deck enc com])]
+                [%pass twire %arvo %b %rest (add now.bowl ~m1)]
+                [%pass twire %arvo %b %wait (add now.bowl ~m1)]
+            ==
+          ::  bob: advance to waiting-for-alice, re-send bob's own seed so alice can combine
+          :_  this(room-state.state rs0(phase [%alice-encrypting ~]))
+          :~  [%pass /peer %agent [peer %poker-room] %poke %poker-deal-action !>([%mp-seed seed=my-seed])]
+              [%pass twire %arvo %b %rest (add now.bowl ~m1)]
+              [%pass twire %arvo %b %wait (add now.bowl ~m1)]
+          ==
         %mp-enc-deck
           ~|  'mp-enc-deck: wrong phase'
           =/  rs0  room-state.state
@@ -84,12 +132,11 @@
                 bob-positions=~[2 3]
                 community-positions=~[4 5 6 7 8]
             ==
-          =/  our-pos  bob-positions.new-phase
-          =/  our-partial  (partial-decrypt-positions:poker-sra reenc-deck our-pos our-key)
+          =/  alice-partial  (partial-decrypt-positions:poker-sra reenc-deck alice-positions.new-phase our-key)
           =.  state  [%0 rs0(phase new-phase) role.state]
           :_  this
           :~  [%pass /peer %agent [peer %poker-room] %poke %poker-deal-action !>([%mp-reenc-deck reenc-deck])]
-              [%pass /peer %agent [peer %poker-room] %poke %poker-deal-action !>([%mp-partial-dec our-partial])]
+              [%pass /peer %agent [peer %poker-room] %poke %poker-deal-action !>([%mp-partial-dec alice-partial])]
               [%pass twire %arvo %b %rest (add now.bowl ~m1)]
               [%pass twire %arvo %b %wait (add now.bowl ~m1)]
           ==
@@ -132,8 +179,24 @@
             (sra-decrypt:poker-sra val.pd our-key)
           =/  rs1  rs0(our-hand decrypted)
           ?.  =(2 (lent decrypted))  `this
-          =.  state  [%0 rs1(phase [%live %preflop *street-status:poker]) role.state]
+          ::  post blinds — alice=SB, bob=BB
+          =/  cfg  config.rs1
+          =/  sb=@ud  small-blind.cfg
+          =/  bb=@ud  big-blind.cfg
+          =/  rs2=room-state:poker
+            ?:  =(role.state %alice)
+              rs1(our-stack (sub our-stack.rs1 sb), our-bet sb, peer-stack (sub peer-stack.rs1 bb), peer-bet bb, pot (add sb bb))
+            rs1(our-stack (sub our-stack.rs1 bb), our-bet bb, peer-stack (sub peer-stack.rs1 sb), peer-bet sb, pot (add sb bb))
+          =/  ss=street-status:poker
+            [%alice `%bob %.n %.n %.n]
+          =.  state  [%0 rs2(phase [%live %preflop ss]) role.state]
+          =/  to-call=@ud  (sub bb sb)
           :_  this
+          ?:  =(role.state %alice)
+            :~  [%give %fact ~[/game] %poker-room-update !>([%hand-dealt our.bowl decrypted])]
+                [%give %fact ~[/game] %poker-room-update !>([%your-turn %preflop ss pot.rs2 to-call min-raise.cfg])]
+                [%pass twire %arvo %b %rest (add now.bowl ~m1)]
+            ==
           :~  [%give %fact ~[/game] %poker-room-update !>([%hand-dealt our.bowl decrypted])]
               [%pass twire %arvo %b %rest (add now.bowl ~m1)]
           ==
@@ -213,20 +276,7 @@
       %-  (slog leaf+"poker-room: poke nack on wire {<wire>}" u.p.sign)
       `this
   ==
-++  on-arvo
-  |=  [=wire s=sign-arvo]
-  ^-  (quip card _this)
-  ?+  wire  (on-arvo:def wire s)
-    [%timeout @ ~]
-      ?.  ?=([%b %wake *] s)  (on-arvo:def wire s)
-      =/  peer  peer.room-state.state
-      =.  phase.room-state.state  [%abandoned ~]
-      :_  this
-      :~  [%give %fact ~[/game] %poker-room-update !>([%timeout-forfeit peer])]
-          [%pass /peer %agent [peer %poker-room] %poke %poker-deal-action !>([%abort 'timeout'])]
-          [%give %kick ~[/game] ~]
-      ==
-  ==
+++  on-arvo  on-arvo:def
 ++  on-watch  |=(=path `this)
 ++  on-leave  |=(=path `this)
 ++  on-peek   |=(=path ~)

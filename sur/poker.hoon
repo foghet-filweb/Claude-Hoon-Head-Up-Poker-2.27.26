@@ -152,7 +152,6 @@
       ==
       [%awaiting-audit winner=@p]
       [%audited audit=audit-record]
-      [%abandoned ~]
   ==
 
 ::  +$ room-state: full state of a %poker-room agent instance
