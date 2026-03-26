@@ -158,6 +158,7 @@
 +$  room-state
   $:  room-id=@uv
       peer=@p
+      dealer=@p
       config=game-config
       method=deal-method
       phase=deal-phase

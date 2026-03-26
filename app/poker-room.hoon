@@ -30,7 +30,11 @@
   ?+  mark  (on-poke:def mark vase)
     %poker-room-init
       =/  init  !<([room-id=@uv peer=@p config=game-config:poker challenger=@p] vase)
-      =/  my-role  ?:(=(our.bowl challenger.init) %alice %bob)
+      =/  new-dealer=@p
+        ?:  =(0 hands-played.room-state.state)
+          challenger.init
+        ?:(=(our.bowl dealer.room-state.state) peer.init our.bowl)
+      =/  my-role  ?:(=(our.bowl new-dealer) %alice %bob)
       =/  our-seed=entropy:poker
         %+  mix  eny.bowl
         (mix (sham [our.bowl now.bowl]) (sham now.bowl))
@@ -38,6 +42,7 @@
       =/  new-state=room-state:poker
         :*  room-id=room-id.init
             peer=peer.init
+            dealer=new-dealer
             config=config.init
             method=[%mental-poker sra-prime:poker-sra]
             phase=?:(=(my-role %alice) [%awaiting-seeds `our-seed ~] [%awaiting-seeds ~ `our-seed])
@@ -212,7 +217,13 @@
           ?+  -.act  `this
             %fold
               =/  rs1
-                rs0(our-stack (add our-stack.rs0 pot.rs0), pot 0, phase [%awaiting-audit our.bowl])
+                %=  rs0
+                  our-stack     (add our-stack.rs0 pot.rs0)
+                  pot           0
+                  phase         [%awaiting-audit our.bowl]
+                  hands-played  +(hands-played.rs0)  ::  also increment at showdown — see Phase 5
+                  total-wagered (add total-wagered.rs0 pot.rs0)
+                ==
               =.  state  [%0 rs1 role.state]
               :_  this
               :~  [%give %fact ~[/game] %poker-room-update !>([%player-folded peer])]
@@ -293,7 +304,14 @@
       ?+  -.action  `this
         %fold
           =/  new-peer-stack  (add peer-stack.rs0 pot.rs0)
-          =/  rs1  rs0(peer-stack new-peer-stack, pot 0, phase [%awaiting-audit peer])
+          =/  rs1
+            %=  rs0
+              peer-stack    new-peer-stack
+              pot           0
+              phase         [%awaiting-audit peer]
+              hands-played  +(hands-played.rs0)  ::  also increment at showdown — see Phase 5
+              total-wagered (add total-wagered.rs0 pot.rs0)
+            ==
           =.  state  [%0 rs1 role.state]
           :_  this
           :~  [%pass /peer %agent [peer %poker-room] %poke %poker-deal-action !>([%street-action action])]
