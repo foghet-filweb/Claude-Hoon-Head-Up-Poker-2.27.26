@@ -150,10 +150,7 @@
   ^-  (quip card _this)
   ?+  path  (on-watch:def path)
     [%chat ~]
-      ?.  (is-l1-ship bowl src.bowl)
-        :_(this [%give %kick ~[path] ~]~)
-      ?.  (has-poker-desk bowl src.bowl)
-        :_(this [%give %kick ~[path] ~]~)
+      ::  TODO operator gate — filter by parent star for production deployment
       =.  subscribers.state   (~(put in subscribers.state) src.bowl)
       =.  unique-ships.state  (~(put in unique-ships.state) src.bowl)
       =/  backlog  (scag 50 messages.state)
@@ -233,8 +230,7 @@
       =/  c  !<(challenge:poker vase)
       ?-  -.c
         %propose
-          ?.  (is-l1-ship bowl src.bowl)
-            `this
+          ::  TODO operator gate — filter by parent star for production deployment
           ?.  =(~ pending-in.state)
             =/  busy-card=card
               [%pass /challenge-busy/(scot %p src.bowl) %agent [src.bowl %poker-lobby] %poke %poker-challenge-notify !>([%busy src.bowl])]
@@ -288,8 +284,7 @@
 
     %poker-send-challenge
       =/  payload  !<([target=@p config=game-config:poker] vase)
-      ?.  (is-l1-ship bowl target.payload)
-        `this
+      ::  TODO operator gate — filter by parent star for production deployment
       =/  expiry=@da  (add now.bowl ~m5)
       =/  c=challenge:poker
         :*  %propose
