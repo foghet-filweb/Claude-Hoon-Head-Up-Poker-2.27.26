@@ -182,7 +182,8 @@
             %+  turn  cards.action
             |=  pd=partial-dec:poker
             (sra-decrypt:poker-sra val.pd our-key)
-          =/  rs1  rs0(our-hand decrypted)
+          ::  save deck to top-level for community reveals
+          =/  rs1  rs0(our-hand decrypted, dbl-enc-deck dbl-enc-deck.phase.rs0)
           ?.  =(2 (lent decrypted))  `this
           ::  post blinds — alice=SB, bob=BB
           =/  cfg  config.rs1
@@ -268,6 +269,34 @@
               :~  [%give %fact ~[/game] %poker-room-update !>([%peer-acted act ss1 pot.rs2 to-call peer-bet.rs2])]
                   [%give %fact ~[/game] %poker-room-update !>([%your-turn str ss1 pot.rs2 to-call min-raise.config.rs2])]
               ==
+          ==
+        %mp-community
+          =/  rs0  room-state.state
+          ?.  ?=([%revealing *] phase.rs0)
+            `this
+          ?.  =(street.action street.phase.rs0)
+            `this
+          =/  our-key  (need our-key.rs0)
+          =/  plaintext=(list @ud)
+            %+  turn  cards.action
+            |=  pd=partial-dec:poker
+            (sra-decrypt:poker-sra val.pd our-key)
+          =/  new-community  (weld community.rs0 plaintext)
+          =/  next-str  street.phase.rs0
+          ::  postflop: bob (non-dealer/BB) acts first
+          =/  ss=street-status:poker  [%bob ~ %.n %.n %.n]
+          =/  rs1
+            rs0(community new-community, phase [%live next-str ss], our-bet 0, peer-bet 0)
+          =.  state  [%0 rs1 role.state]
+          :_  this
+          ?:  =(role.state %bob)
+            ::  we act first
+            :~  [%give %fact ~[/game] %poker-room-update !>([%community-dealt next-str plaintext])]
+                [%give %fact ~[/game] %poker-room-update !>([%your-turn next-str ss pot.rs1 0 min-raise.config.rs1])]
+            ==
+          ::  peer acts first
+          :~  [%give %fact ~[/game] %poker-room-update !>([%community-dealt next-str plaintext])]
+              [%give %fact ~[/game] %poker-room-update !>([%street-started next-str ss pot.rs1 0 min-raise.config.rs1])]
           ==
         %mp-reveal-key
           ~>  %slog.[0 leaf+"poker-room: key reveal received from peer"]
@@ -369,4 +398,33 @@
 ++  on-leave  |=(=path `this)
 ++  on-peek   |=(=path ~)
 ++  on-fail   on-fail:def
+++  advance-street
+  ::  Compute our partial decrypts of the next street's community positions,
+  ::  send %mp-community to peer, and transition phase to %revealing.
+  |=  rs=room-state:poker
+  ^-  (quip card room-state:poker)
+  ?>  ?=([%live *] phase.rs)
+  =/  cur  street.phase.rs
+  =/  next-str=street:poker
+    ?-  cur
+      %preflop   %flop
+      %flop      %turn
+      %turn      %river
+      %river     %showdown
+      %showdown  !!
+    ==
+  =/  positions=(list @ud)
+    ?-  next-str
+      %flop      ~[4 5 6]
+      %turn      ~[7]
+      %river     ~[8]
+      %preflop   ~
+      %showdown  ~
+    ==
+  =/  our-key  (need our-key.rs)
+  =/  partials  (partial-decrypt-positions:poker-sra dbl-enc-deck.rs positions our-key)
+  =/  rs1  rs(phase [%revealing next-str positions])
+  :_  rs1
+  :~  [%pass /peer %agent [peer.rs %poker-room] %poke %poker-deal-action !>([%mp-community next-str partials])]
+  ==
 --
