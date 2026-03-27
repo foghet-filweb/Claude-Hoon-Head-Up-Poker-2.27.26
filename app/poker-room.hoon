@@ -271,7 +271,7 @@
                 =.  state  [%0 +.adv role.state]
                 :_  this
                 %+  weld
-                -.adv
+                `(list card)`-.adv
                 :~  [%give %fact ~[/game] %poker-room-update !>([%peer-acted act ss1 pot.+.adv 0 peer-bet.+.adv])]
                 ==
               =.  state  [%0 rs1 role.state]
@@ -287,7 +287,7 @@
               =.  state  [%0 +.adv role.state]
               :_  this
               %+  weld
-              -.adv
+              `(list card)`-.adv
               :~  [%give %fact ~[/game] %poker-room-update !>([%peer-acted act ss pot.+.adv 0 peer-bet.+.adv])]
               ==
             %raise
@@ -395,7 +395,7 @@
             =.  state  [%0 +.adv role.state]
             :_  this
             %+  weld
-            -.adv
+            `(list card)`-.adv
             :~  [%pass /peer %agent [peer %poker-room] %poke %poker-deal-action !>([%street-action action])]
                 [%give %fact ~[/game] %poker-room-update !>([%player-checked our.bowl])]
             ==
@@ -425,7 +425,7 @@
           =.  state  [%0 +.adv role.state]
           :_  this
           %+  weld
-          -.adv
+          `(list card)`-.adv
           :~  [%pass /peer %agent [peer %poker-room] %poke %poker-deal-action !>([%street-action action])]
               [%give %fact ~[/game] %poker-room-update !>([%player-called our.bowl to-call])]
           ==
