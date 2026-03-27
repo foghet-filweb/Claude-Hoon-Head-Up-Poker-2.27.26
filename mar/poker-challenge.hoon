@@ -36,7 +36,7 @@
     ?-  -.c
       %propose
         %-  pairs:enjs:format
-        :~  ['game'        s+(~(scot %tas game.c))]
+        :~  ['game'        s+`@t`game.c]
             ['small-blind' (numb:enjs:format small-blind.c)]
             ['big-blind'   (numb:enjs:format big-blind.c)]
             ['min-raise'   (numb:enjs:format min-raise.c)]
@@ -46,7 +46,7 @@
         ==
       %accept
         %-  pairs:enjs:format
-        ~[['room-id' s+(~(scot %uv room-id.c))]]
+        ~[['room-id' s+(scot %uv room-id.c)]]
       %decline  (pairs:enjs:format ~[['declined' b+&]])
       %busy     (pairs:enjs:format ~[['busy' b+&]])
     ==
