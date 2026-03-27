@@ -271,8 +271,8 @@
                 =.  state  [%0 +.adv role.state]
                 :_  this
                 %+  weld
-                `(list card)`-.adv
-                :~  [%give %fact ~[/game] %poker-room-update !>([%peer-acted act ss1 pot.+.adv 0 peer-bet.+.adv])]
+                  `(list card)`-.adv
+                `(list card)`:~  [%give %fact ~[/game] %poker-room-update !>([%peer-acted act ss1 pot.+.adv 0 peer-bet.+.adv])]
                 ==
               =.  state  [%0 rs1 role.state]
               :_  this
@@ -287,8 +287,8 @@
               =.  state  [%0 +.adv role.state]
               :_  this
               %+  weld
-              `(list card)`-.adv
-              :~  [%give %fact ~[/game] %poker-room-update !>([%peer-acted act ss pot.+.adv 0 peer-bet.+.adv])]
+                `(list card)`-.adv
+              `(list card)`:~  [%give %fact ~[/game] %poker-room-update !>([%peer-acted act ss pot.+.adv 0 peer-bet.+.adv])]
               ==
             %raise
               =/  amount  amount.act
@@ -395,8 +395,8 @@
             =.  state  [%0 +.adv role.state]
             :_  this
             %+  weld
-            `(list card)`-.adv
-            :~  [%pass /peer %agent [peer %poker-room] %poke %poker-deal-action !>([%street-action action])]
+              `(list card)`-.adv
+            `(list card)`:~  [%pass /peer %agent [peer %poker-room] %poke %poker-deal-action !>([%street-action action])]
                 [%give %fact ~[/game] %poker-room-update !>([%player-checked our.bowl])]
             ==
           =.  state  [%0 rs1 role.state]
@@ -425,8 +425,8 @@
           =.  state  [%0 +.adv role.state]
           :_  this
           %+  weld
-          `(list card)`-.adv
-          :~  [%pass /peer %agent [peer %poker-room] %poke %poker-deal-action !>([%street-action action])]
+            `(list card)`-.adv
+          `(list card)`:~  [%pass /peer %agent [peer %poker-room] %poke %poker-deal-action !>([%street-action action])]
               [%give %fact ~[/game] %poker-room-update !>([%player-called our.bowl to-call])]
           ==
         %raise
