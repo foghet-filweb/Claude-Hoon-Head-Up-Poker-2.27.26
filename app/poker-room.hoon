@@ -269,11 +269,9 @@
               ?:  street-done
                 =/  adv  (advance-street rs1 str)
                 =.  state  [%0 +.adv role.state]
+                =/  notify=card  [%give %fact ~[/game] %poker-room-update !>([%peer-acted act ss1 pot.+.adv 0 peer-bet.+.adv])]
                 :_  this
-                %+  weld
-                  `(list card)`-.adv
-                `(list card)`:~  [%give %fact ~[/game] %poker-room-update !>([%peer-acted act ss1 pot.+.adv 0 peer-bet.+.adv])]
-                ==
+                (weld `(list card)`-.adv `(list card)`~[notify])
               =.  state  [%0 rs1 role.state]
               :_  this
               :~  [%give %fact ~[/game] %poker-room-update !>([%peer-acted act ss1 pot.rs1 0 peer-bet.rs1])]
@@ -285,11 +283,9 @@
                 rs0(peer-stack (sub peer-stack.rs0 to-call), peer-bet (add peer-bet.rs0 to-call), pot (add pot.rs0 to-call))
               =/  adv  (advance-street rs1 str)
               =.  state  [%0 +.adv role.state]
+              =/  notify=card  [%give %fact ~[/game] %poker-room-update !>([%peer-acted act ss pot.+.adv 0 peer-bet.+.adv])]
               :_  this
-              %+  weld
-                `(list card)`-.adv
-              `(list card)`:~  [%give %fact ~[/game] %poker-room-update !>([%peer-acted act ss pot.+.adv 0 peer-bet.+.adv])]
-              ==
+              (weld `(list card)`-.adv `(list card)`~[notify])
             %raise
               =/  amount  amount.act
               =/  rs1
@@ -393,12 +389,12 @@
           ?:  street-done
             =/  adv  (advance-street rs1 street.ph)
             =.  state  [%0 +.adv role.state]
+            =/  notifs=(list card)
+              :~  [%pass /peer %agent [peer %poker-room] %poke %poker-deal-action !>([%street-action action])]
+                  [%give %fact ~[/game] %poker-room-update !>([%player-checked our.bowl])]
+              ==
             :_  this
-            %+  weld
-              `(list card)`-.adv
-            `(list card)`:~  [%pass /peer %agent [peer %poker-room] %poke %poker-deal-action !>([%street-action action])]
-                [%give %fact ~[/game] %poker-room-update !>([%player-checked our.bowl])]
-            ==
+            (weld `(list card)`-.adv notifs)
           =.  state  [%0 rs1 role.state]
           :_  this
           :~  [%pass /peer %agent [peer %poker-room] %poke %poker-deal-action !>([%street-action action])]
@@ -423,12 +419,12 @@
             ==
           =/  adv  (advance-street rs1 street.ph)
           =.  state  [%0 +.adv role.state]
+          =/  notifs=(list card)
+            :~  [%pass /peer %agent [peer %poker-room] %poke %poker-deal-action !>([%street-action action])]
+                [%give %fact ~[/game] %poker-room-update !>([%player-called our.bowl to-call])]
+            ==
           :_  this
-          %+  weld
-            `(list card)`-.adv
-          `(list card)`:~  [%pass /peer %agent [peer %poker-room] %poke %poker-deal-action !>([%street-action action])]
-              [%give %fact ~[/game] %poker-room-update !>([%player-called our.bowl to-call])]
-          ==
+          (weld `(list card)`-.adv notifs)
         %raise
           =/  amount  amount.action
           ~|  'do-raise: insufficient stack'
