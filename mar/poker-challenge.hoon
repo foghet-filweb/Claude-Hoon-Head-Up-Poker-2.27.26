@@ -57,5 +57,3 @@
     --
   ++  grad  %noun
   --
-  HOON
-grep 'rid' /root/forbes-ramdyt/fhloston-poker/mar/poker-challenge.hoon
