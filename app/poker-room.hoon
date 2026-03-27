@@ -12,10 +12,8 @@
 ++  advance-street
   ::  Compute our partial decrypts of the next street's community positions,
   ::  send %mp-community to peer, and transition phase to %revealing.
-  |=  rs=room-state:poker
+  |=  [rs=room-state:poker cur=street:poker]
   ^-  (quip card room-state:poker)
-  ?>  ?=([%live *] phase.rs)
-  =/  cur  street.phase.rs
   =/  next-str=street:poker
     ?-  cur
       %preflop   %flop
@@ -269,7 +267,7 @@
                 ==
               =/  rs1  rs0(phase [%live str ss1])
               ?:  street-done
-                =^  adv-cards  rs1  (advance-street rs1)
+                =^  adv-cards  rs1  (advance-street rs1 str)
                 =.  state  [%0 rs1 role.state]
                 :_  this
                 %+  weld
@@ -285,7 +283,7 @@
               =/  to-call  (sub our-bet.rs0 peer-bet.rs0)
               =/  rs1
                 rs0(peer-stack (sub peer-stack.rs0 to-call), peer-bet (add peer-bet.rs0 to-call), pot (add pot.rs0 to-call))
-              =^  adv-cards  rs1  (advance-street rs1)
+              =^  adv-cards  rs1  (advance-street rs1 str)
               =.  state  [%0 rs1 role.state]
               :_  this
               %+  weld
@@ -393,7 +391,7 @@
             ==
           =/  rs1  rs0(phase [%live street.ph ss1])
           ?:  street-done
-            =^  adv-cards  rs1  (advance-street rs1)
+            =^  adv-cards  rs1  (advance-street rs1 street.ph)
             =.  state  [%0 rs1 role.state]
             :_  this
             %+  weld
@@ -423,7 +421,7 @@
             :~  [%pass /peer %agent [peer %poker-room] %poke %poker-deal-action !>([%street-action action])]
                 [%give %fact ~[/game] %poker-room-update !>([%player-called our.bowl to-call])]
             ==
-          =^  adv-cards  rs1  (advance-street rs1)
+          =^  adv-cards  rs1  (advance-street rs1 street.ph)
           =.  state  [%0 rs1 role.state]
           :_  this
           %+  weld
