@@ -40,12 +40,8 @@
               ['small-blind' (numb:enjs:format small-blind.c)]
               ['big-blind'   (numb:enjs:format big-blind.c)]
               ['min-raise'   (numb:enjs:format min-raise.c)]
-              :-  'hands'
-              ?~  hands.c  ~[%n '0']
-              (numb:enjs:format u.hands.c)
-              :-  'cap'
-              ?~  cap.c  ~[%n '0']
-              (numb:enjs:format u.cap.c)
+              ['hands'  ?~(hands.c [%n '0'] (numb:enjs:format u.hands.c))]
+              ['cap'    ?~(cap.c   [%n '0'] (numb:enjs:format u.cap.c))]
               ['expires' (numb:enjs:format (unm:chrono:userlib expires.c))]
           ==
         %accept
