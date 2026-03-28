@@ -37,7 +37,7 @@
       %propose
         =/  game-name=@t  `@t`game.c
         %-  pairs:enjs:format
-        :~  ['game'        s+game-name]
+        :~  ['game'        [%s game-name]]
             ['small-blind' (numb:enjs:format small-blind.c)]
             ['big-blind'   (numb:enjs:format big-blind.c)]
             ['min-raise'   (numb:enjs:format min-raise.c)]
@@ -47,7 +47,7 @@
         ==
       %accept
         %-  pairs:enjs:format
-        ~[['room-id' s+(scot %uv room-id.c)]]
+        ~[['room-id' [%s (scot %uv room-id.c)]]]
       %decline  (pairs:enjs:format ~[['declined' b+&]])
       %busy     (pairs:enjs:format ~[['busy' b+&]])
     ==
