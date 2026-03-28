@@ -35,8 +35,9 @@
     ^-  ^json
     ?-  -.c
       %propose
+        =/  game-name=@t  `@t`game.c
         %-  pairs:enjs:format
-        :~  ['game'        s+`@t`game.c]
+        :~  ['game'        s+game-name]
             ['small-blind' (numb:enjs:format small-blind.c)]
             ['big-blind'   (numb:enjs:format big-blind.c)]
             ['min-raise'   (numb:enjs:format min-raise.c)]
