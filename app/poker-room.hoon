@@ -466,7 +466,12 @@
       %-  (slog leaf+"poker-room: poke nack on wire {<wire>}" u.p.sign)
       `this
   ==
-++  on-arvo  on-arvo:def
+++  on-arvo
+  |=  [=wire sign=sign-arvo]
+  ^-  (quip card _this)
+  ?+  wire  (on-arvo:def wire sign)
+    [%timeout *]  `this
+  ==
 ++  on-watch  |=(=path `this)
 ++  on-leave  |=(=path `this)
 ++  on-peek   |=(=path ~)
