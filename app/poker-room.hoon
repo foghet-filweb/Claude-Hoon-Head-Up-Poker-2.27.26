@@ -262,8 +262,12 @@
                   ss(actor our-actor, alice-acted %.y)
                 ss(actor our-actor)
               =/  street-done=?
-                ?&  ?=(~ last-aggressor.ss1)
-                    alice-acted.ss1
+                ?|  ?&  ?=(~ last-aggressor.ss1)
+                        alice-acted.ss1
+                    ==
+                    ?&  =(%preflop str)
+                        =(our-bet.rs0 peer-bet.rs0)
+                    ==
                 ==
               =/  rs1  rs0(phase [%live str ss1])
               ?:  street-done
