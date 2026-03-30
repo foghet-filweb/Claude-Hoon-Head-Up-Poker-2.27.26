@@ -281,6 +281,17 @@
               =/  to-call  (sub our-bet.rs0 peer-bet.rs0)
               =/  rs1
                 rs0(peer-stack (sub peer-stack.rs0 to-call), peer-bet (add peer-bet.rs0 to-call), pot (add pot.rs0 to-call))
+              ::  preflop BB option: peer (Alice) called our BB, we still have option to raise
+              =/  bb-option=?
+                ?&  =(%preflop str)
+                    =(our-bet.rs1 peer-bet.rs1)
+                ==
+              ?:  bb-option
+                =.  state  [%0 rs1 role.state]
+                :_  this
+                :~  [%give %fact ~[/game] %poker-room-update !>([%peer-acted act ss pot.rs1 0 peer-bet.rs1])]
+                    [%give %fact ~[/game] %poker-room-update !>([%your-turn str ss pot.rs1 0 min-raise.config.rs1])]
+                ==
               =/  adv  (advance-street rs1 str)
               =.  state  [%0 +.adv role.state]
               =/  notify=card  [%give %fact ~[/game] %poker-room-update !>([%peer-acted act ss pot.+.adv 0 peer-bet.+.adv])]
