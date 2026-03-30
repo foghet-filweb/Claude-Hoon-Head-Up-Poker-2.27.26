@@ -287,10 +287,12 @@
                     =(our-bet.rs1 peer-bet.rs1)
                 ==
               ?:  bb-option
-                =.  state  [%0 rs1 role.state]
+                =/  ss1  ss(actor our-actor)
+                =/  rs2  rs1(phase [%live str ss1])
+                =.  state  [%0 rs2 role.state]
                 :_  this
-                :~  [%give %fact ~[/game] %poker-room-update !>([%peer-acted act ss pot.rs1 0 peer-bet.rs1])]
-                    [%give %fact ~[/game] %poker-room-update !>([%your-turn str ss pot.rs1 0 min-raise.config.rs1])]
+                :~  [%give %fact ~[/game] %poker-room-update !>([%peer-acted act ss1 pot.rs2 0 peer-bet.rs2])]
+                    [%give %fact ~[/game] %poker-room-update !>([%your-turn str ss1 pot.rs2 0 min-raise.config.rs2])]
                 ==
               =/  adv  (advance-street rs1 str)
               =.  state  [%0 +.adv role.state]
