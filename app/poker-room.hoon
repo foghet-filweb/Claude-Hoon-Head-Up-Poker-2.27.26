@@ -402,7 +402,6 @@
                     alice-acted.ss1
                 ==
                 ?&  =(%preflop street.ph)
-                    ?=(~ last-aggressor.ss1)
                     =(our-bet.rs0 peer-bet.rs0)
                 ==
             ==
