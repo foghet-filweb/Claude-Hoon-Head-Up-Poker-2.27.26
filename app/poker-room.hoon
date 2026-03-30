@@ -366,10 +366,12 @@
       ~|  'handle-game-action: not in live phase'
       =/  rs0  room-state.state
       =/  ph  phase.rs0
+      ~>  %slog.[0 leaf+"game-action: phase={<ph>}"]
       ?>  ?=([%live *] ph)
       ::  enforce turn order — drop if it's not our turn
       =/  our-actor  ?:(=(role.state %alice) %alice %bob)
       =/  peer-actor=?(%alice %bob)  ?:(=(role.state %alice) %bob %alice)
+      ~>  %slog.[0 leaf+"game-action: actor={<actor.street-status.ph>} our-actor={<our-actor>}"]
       ?.  =(actor.street-status.ph our-actor)
         `this
       =/  peer  peer.rs0
