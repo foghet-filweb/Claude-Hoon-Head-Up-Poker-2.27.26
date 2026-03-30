@@ -398,8 +398,13 @@
               street-status.ph(actor peer-actor, alice-acted %.y)
             street-status.ph(actor peer-actor)
           =/  street-done=?
-            ?&  ?=(~ last-aggressor.ss1)
-                alice-acted.ss1
+            ?|  ?&  ?=(~ last-aggressor.ss1)
+                    alice-acted.ss1
+                ==
+                ?&  =(%preflop street.ph)
+                    ?=(~ last-aggressor.ss1)
+                    =(our-bet.rs0 peer-bet.rs0)
+                ==
             ==
           =/  rs1  rs0(phase [%live street.ph ss1])
           ?:  street-done
