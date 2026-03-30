@@ -287,6 +287,7 @@
                     =(our-bet.rs1 peer-bet.rs1)
                 ==
               ?:  bb-option
+                ~>  %slog.[0 leaf+"bb-option fired, our-actor={<our-actor>}"]
                 =/  ss1  ss(actor our-actor)
                 =/  rs2  rs1(phase [%live str ss1])
                 =.  state  [%0 rs2 role.state]
