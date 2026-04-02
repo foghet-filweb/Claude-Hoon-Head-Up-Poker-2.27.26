@@ -15,32 +15,10 @@
 ++  grab
   |%
   ++  noun  action:poker
-  ++  json
-    |=  j=^json
-    ^-  action:poker
-    =/  inner  ((ot ~[poker-game-action+jo]) j)
-    ?:  (~(has by inner) 'fold')   [%fold ~]
-    ?:  (~(has by inner) 'check')  [%check ~]
-    ?:  (~(has by inner) 'call')   [%call ~]
-    ?:  (~(has by inner) 'raise')
-      =/  r        (~(got by inner) 'raise')
-      =/  amount=@ud  (ni:dejs:format ((ot ~[amount+ni]) r))
-      [%raise amount]
-    ~|('poker-game-action: unrecognised action' !!)
   --
 ++  grow
   |%
   ++  noun  a
-  ++  json
-    ^-  ^json
-    %-  pairs:enjs:format
-    ?-  -.a
-      %fold   ~[['action' s+'fold']]
-      %check  ~[['action' s+'check']]
-      %call   ~[['action' s+'call']]
-      %raise  ~[['action' s+'raise'] ['amount' (numb:enjs:format amount.a)]]
-      %all-in ~[['action' s+'all-in']]
-    ==
   --
 ++  grad  %noun
 --

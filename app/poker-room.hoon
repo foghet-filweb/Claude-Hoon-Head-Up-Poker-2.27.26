@@ -1,6 +1,6 @@
 ::  /app/poker-room.hoon
 /-  poker
-/+  default-agent, dbug, poker-sra
+/+  default-agent, dbug, poker-sra, poker-hand
 |%
 +$  role    ?(%alice %bob)
 +$  card    card:agent:gall
@@ -129,11 +129,12 @@
               %+  turn  (gulf 0 51)
               |=  n=@ud
               [(shax (mix combined n)) n]
+            =/  prime-deck  card-primes:poker-hand
             =/  plain-deck
               ^-  enc-deck:poker
               %+  turn
                 (sort pairs |=([a=[@ @] b=[@ @]] (lth -.a -.b)))
-              |=([k=@ v=@ud] `enc-card:poker``@ux`v)
+              |=([k=@ v=@ud] `enc-card:poker``@ux`(snag v prime-deck))
             =/  enc  (reencrypt-deck:poker-sra plain-deck our-key)
             =/  com  (commit-deck:poker-sra enc room-id.rs0)
             :_  this(room-state.state rs0(phase [%bob-reencrypting enc-deck=enc alice-commit=com]))
@@ -154,6 +155,7 @@
           ?>  ?=([%alice-encrypting ~] phase.rs0)
           =/  actual-commit  (commit-deck:poker-sra deck.action room-id.rs0)
           ~|  'mp-enc-deck: commitment mismatch'
+          ~>  %slog.[0 leaf+"mp-enc-deck: commit check passed, deck-len={<(lent deck.action)>}"]
           ?>  =(commit.action actual-commit)
           =/  our-key  (need our-key.rs0)
           =/  reenc-deck  (reencrypt-deck:poker-sra deck.action our-key)
@@ -164,7 +166,7 @@
                 bob-positions=~[2 3]
                 community-positions=~[4 5 6 7 8]
             ==
-          =/  alice-partial  (partial-decrypt-positions:poker-sra reenc-deck alice-positions.new-phase our-key)
+          =/  alice-partial  (partial-decrypt-positions:poker-sra reenc-deck bob-positions.new-phase our-key)
           =.  state  [%0 rs0(phase new-phase) role.state]
           :_  this
           :~  [%pass /peer %agent [peer %poker-room] %poke %poker-deal-action !>([%mp-reenc-deck reenc-deck])]
@@ -186,7 +188,7 @@
                 bob-positions=~[2 3]
                 community-positions=~[4 5 6 7 8]
             ==
-          =/  bob-partial  (partial-decrypt-positions:poker-sra deck.action ~[2 3] our-key)
+          =/  bob-partial  (partial-decrypt-positions:poker-sra deck.action ~[0 1] our-key)
           =.  state  [%0 rs0(phase new-phase) role.state]
           :_  this
           ~[[%pass /peer %agent [peer %poker-room] %poke %poker-deal-action !>([%mp-partial-dec bob-partial])]]
@@ -209,6 +211,7 @@
             %+  turn  cards.action
             |=  pd=partial-dec:poker
             (sra-decrypt:poker-sra val.pd our-key)
+          ~>  %slog.[0 leaf+"mp-partial-dec: decrypted={<decrypted>} len={<(lent decrypted)>}"]
           ::  save deck to top-level for community reveals
           =/  rs1  rs0(our-hand decrypted, dbl-enc-deck dbl-enc-deck.phase.rs0)
           ?.  =(2 (lent decrypted))  `this
@@ -223,6 +226,7 @@
           =/  ss=street-status:poker
             [%alice `%bob %.n %.n %.n]
           =.  state  [%0 rs2(phase [%live %preflop ss]) role.state]
+          ~>  %slog.[0 leaf+"mp-partial-dec: state saved, our-hand={<our-hand.room-state.state>}"]
           =/  to-call=@ud  (sub bb sb)
           :_  this
           ?:  =(role.state %alice)
@@ -271,6 +275,13 @@
                 ==
               =/  rs1  rs0(phase [%live str ss1])
               ?:  street-done
+                ?:  =(str %river)
+                  =/  r  (need our-key.rs1)
+                  =.  state  [%0 rs1 role.state]
+                  :_  this
+                  :~  [%give %fact ~[/game] %poker-room-update !>([%peer-acted act ss1 pot.rs1 0 peer-bet.rs1])]
+                      [%pass /peer %agent [peer.rs0 %poker-room] %poke %poker-deal-action !>([%mp-reveal-key d.r `@ux`0])]
+                  ==
                 =/  adv  (advance-street rs1 str)
                 =.  state  [%0 +.adv role.state]
                 =/  notify=card  [%give %fact ~[/game] %poker-room-update !>([%peer-acted act ss1 pot.+.adv 0 peer-bet.+.adv])]
@@ -298,6 +309,13 @@
                 :_  this
                 :~  [%give %fact ~[/game] %poker-room-update !>([%peer-acted act ss1 pot.rs2 0 peer-bet.rs2])]
                     [%give %fact ~[/game] %poker-room-update !>([%your-turn str ss1 pot.rs2 0 min-raise.config.rs2])]
+                ==
+              ?:  =(str %river)
+                =/  r  (need our-key.rs1)
+                =.  state  [%0 rs1 role.state]
+                :_  this
+                :~  [%give %fact ~[/game] %poker-room-update !>([%peer-acted act ss pot.rs1 0 peer-bet.rs1])]
+                    [%pass /peer %agent [peer.rs0 %poker-room] %poke %poker-deal-action !>([%mp-reveal-key d.r `@ux`0])]
                 ==
               =/  adv  (advance-street rs1 str)
               =.  state  [%0 +.adv role.state]
@@ -346,9 +364,31 @@
               [%give %fact ~[/game] %poker-room-update !>([%street-started next-str ss pot.rs1 0 min-raise.config.rs1])]
           ==
         %mp-reveal-key
-          ~>  %slog.[0 leaf+"poker-room: key reveal received from peer"]
+          =/  rs0   room-state.state
+          =/  peer-d  key.action
+          =/  r     (need our-key.rs0)
+          =/  our-actor  ?:(=(role.state %alice) %alice %bob)
+          =/  peer-positions=(list @ud)
+            ?:(=(our-actor %alice) ~[2 3] ~[0 1])
+          =/  peer-key  [e=0 d=peer-d p=p.r]
+          ~>  %slog.[0 leaf+"showdown: our-actor={<our-actor>} our-hand={<our-hand.rs0>} deck-0={<(snag 0 dbl-enc-deck.rs0)>} deck-1={<(snag 1 dbl-enc-deck.rs0)>} deck-2={<(snag 2 dbl-enc-deck.rs0)>} deck-3={<(snag 3 dbl-enc-deck.rs0)>}"]
+          =/  peer-hand=(list @ud)
+            %+  turn  peer-positions
+            |=  idx=@ud
+            =/  dbl   (snag idx dbl-enc-deck.rs0)
+            =/  half  (decrypt-card:poker-sra dbl [e=e.r d=d.r p=p.r])
+            =/  result  `@ud`(decrypt-card:poker-sra half peer-key)
+            ~>  %slog.[0 leaf+"showdown: idx={<idx>} dbl={<dbl>} half={<half>} result={<result>}"]
+            result
+          =/  alice-hand=(list @ud)
+            ?:(=(our-actor %alice) our-hand.rs0 peer-hand)
+          =/  bob-hand=(list @ud)
+            ?:(=(our-actor %alice) peer-hand our-hand.rs0)
+          =/  alice-result  (eval-holdem:poker-hand alice-hand community.rs0)
+          =/  bob-result    (eval-holdem:poker-hand bob-hand community.rs0)
+          =/  outcome       (compare-hands:poker-hand alice-result bob-result)
           :_  this
-          :~  [%give %fact ~[/game] %poker-room-update !>([%key-revealed peer])]
+          :~  [%give %fact ~[/game] %poker-room-update !>([%hand-complete alice-result bob-result outcome])]
           ==
         %abort
           :_  this
@@ -411,6 +451,14 @@
             ==
           =/  rs1  rs0(phase [%live street.ph ss1])
           ?:  street-done
+            ?:  =(street.ph %river)
+              =/  r  (need our-key.rs1)
+              =.  state  [%0 rs1 role.state]
+              :_  this
+              :~  [%pass /peer %agent [peer %poker-room] %poke %poker-deal-action !>([%street-action action])]
+                  [%give %fact ~[/game] %poker-room-update !>([%player-checked our.bowl])]
+                  [%pass /peer %agent [peer %poker-room] %poke %poker-deal-action !>([%mp-reveal-key d.r `@ux`0])]
+              ==
             =/  adv  (advance-street rs1 street.ph)
             =.  state  [%0 +.adv role.state]
             =/  notifs=(list card)
@@ -440,6 +488,14 @@
             :_  this
             :~  [%pass /peer %agent [peer %poker-room] %poke %poker-deal-action !>([%street-action action])]
                 [%give %fact ~[/game] %poker-room-update !>([%player-called our.bowl to-call])]
+            ==
+          ?:  =(street.ph %river)
+            =/  r  (need our-key.rs1)
+            =.  state  [%0 rs1 role.state]
+            :_  this
+            :~  [%pass /peer %agent [peer %poker-room] %poke %poker-deal-action !>([%street-action action])]
+                [%give %fact ~[/game] %poker-room-update !>([%player-called our.bowl to-call])]
+                [%pass /peer %agent [peer %poker-room] %poke %poker-deal-action !>([%mp-reveal-key d.r `@ux`0])]
             ==
           =/  adv  (advance-street rs1 street.ph)
           =.  state  [%0 +.adv role.state]

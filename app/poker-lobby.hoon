@@ -315,7 +315,7 @@
       =/  cancel-timer=card
         [%pass /challenge-expire/(scot %p challenger) %arvo [%b %rest expires.inc]]
       =/  accept-poke=card
-        [%pass /challenge-accept/(scot %p challenger) %agent [challenger %poker-lobby] %poke %poker-accept-challenge !>(challenger)]
+        [%pass /challenge-accept/(scot %p challenger) %agent [challenger %poker-lobby] %poke %poker-challenge !>([%accept room-id])]
       =/  cfg=game-config:poker
         :*  game=game.inc
             small-blind=small-blind.inc

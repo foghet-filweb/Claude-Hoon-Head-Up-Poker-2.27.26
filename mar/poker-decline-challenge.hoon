@@ -8,11 +8,6 @@
 ++  grab
   |%
   ++  noun  @p
-  ++  json
-    |=  j=^json
-    ^-  @p
-    =/  inner  ((ot ~[poker-decline-challenge+so]) j)
-    (slav %p (cat 3 '~' inner))
   --
 ++  grow
   |%
