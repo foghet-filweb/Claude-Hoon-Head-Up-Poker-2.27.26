@@ -166,7 +166,7 @@
                 bob-positions=~[2 3]
                 community-positions=~[4 5 6 7 8]
             ==
-          =/  alice-partial  (partial-decrypt-positions:poker-sra reenc-deck bob-positions.new-phase our-key)
+          =/  alice-partial  (partial-decrypt-positions:poker-sra reenc-deck alice-positions.new-phase our-key)
           =.  state  [%0 rs0(phase new-phase) role.state]
           :_  this
           :~  [%pass /peer %agent [peer %poker-room] %poke %poker-deal-action !>([%mp-reenc-deck reenc-deck])]
@@ -188,7 +188,7 @@
                 bob-positions=~[2 3]
                 community-positions=~[4 5 6 7 8]
             ==
-          =/  bob-partial  (partial-decrypt-positions:poker-sra deck.action ~[0 1] our-key)
+          =/  bob-partial  (partial-decrypt-positions:poker-sra deck.action bob-positions.new-phase our-key)
           =.  state  [%0 rs0(phase new-phase) role.state]
           :_  this
           ~[[%pass /peer %agent [peer %poker-room] %poke %poker-deal-action !>([%mp-partial-dec bob-partial])]]
