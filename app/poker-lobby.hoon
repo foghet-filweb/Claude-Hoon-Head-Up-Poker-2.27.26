@@ -169,7 +169,7 @@
             complaints.versioned
             ship-hands.versioned
         ==
-      %2  versioned
+      %2  versioned(subscribers ~)
     ==
   `this(state migrated)
 
