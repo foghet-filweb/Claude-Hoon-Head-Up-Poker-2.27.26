@@ -43,9 +43,24 @@
       lobby-host=(unit @p)
   ==
 
-::  +$ lobby-state: current shape — tagged %1.
-+$  lobby-state
+::  +$ lobby-state-v1: shape tagged %1 — kept for migration source.
++$  lobby-state-v1
   $:  %1
+      subscribers=(set @p)
+      unique-ships=(set @p)
+      messages=(list chat-message:poker)
+      pending-out=(map @p challenge:poker)
+      pending-in=(unit [challenger=@p c=challenge:poker])
+      games-played=@ud
+      lobby-host=(unit @p)
+      rate-buckets=(map @p rate-bucket)
+      complaints=(map @p (map complaint-category:poker @ud))
+      ship-hands=(map @p @ud)
+  ==
+
+::  +$ lobby-state: current shape — tagged %2. messages cleared on migration.
++$  lobby-state
+  $:  %2
       subscribers=(set @p)
       unique-ships=(set @p)
       messages=(list chat-message:poker)
@@ -60,6 +75,7 @@
 
 +$  versioned-state
   $%  lobby-state-v0
+      lobby-state-v1
       lobby-state
   ==
 
@@ -128,10 +144,10 @@
   =/  migrated=lobby-state
     ?-  -.versioned
       %0
-        :*  %1
+        :*  %2
             subscribers.versioned
             unique-ships.versioned
-            messages.versioned
+            ~
             pending-out.versioned
             pending-in.versioned
             games-played.versioned
@@ -140,7 +156,20 @@
             *(map @p (map complaint-category:poker @ud))
             *(map @p @ud)
         ==
-      %1  versioned
+      %1
+        :*  %2
+            subscribers.versioned
+            unique-ships.versioned
+            ~
+            pending-out.versioned
+            pending-in.versioned
+            games-played.versioned
+            lobby-host.versioned
+            rate-buckets.versioned
+            complaints.versioned
+            ship-hands.versioned
+        ==
+      %2  versioned
     ==
   `this(state migrated)
 
@@ -148,28 +177,38 @@
 ++  on-watch
   |=  =path
   ^-  (quip card _this)
+  ~&  [%on-watch path src.bowl]
   ?+  path  (on-watch:def path)
     [%chat ~]
       ::  TODO operator gate — filter by parent star for production deployment
       =.  subscribers.state   (~(put in subscribers.state) src.bowl)
       =.  unique-ships.state  (~(put in unique-ships.state) src.bowl)
-      =/  backlog  (scag 50 messages.state)
+      =/  backlog  (scag 5 messages.state)
+      ::  Send backlog only to the new subscriber (~, not ~[/chat]) so existing
+      ::  subscribers don't receive replayed messages on every new join.
       =/  backlog-cards=(list card)
         %+  turn  (flop backlog)
         |=  msg=chat-message:poker
-        [%give %fact ~[/chat] %poker-chat-update !>([%message msg])]
-      =/  join-card=card
-        [%give %fact ~[/chat] %poker-chat-update !>([%join src.bowl])]
-      [(weld backlog-cards ~[join-card]) this]
+        [%give %fact ~ %poker-chat-update !>(`chat-update:poker`[%message msg])]
+      ::  Defer the join broadcast to the next Behn event so the cross-ship
+      ::  subscription is fully committed before we fan out via ~[/chat].
+      ::  Delivering a %fact to a newly-added remote subscriber from within
+      ::  on-watch return kicks them before the Ames ack round-trip completes.
+      =/  join-timer=card
+        [%pass /join-announce/(scot %p src.bowl) %arvo [%b %wait now.bowl]]
+      [(weld backlog-cards ~[join-timer]) this]
+    [%challenges ~]
+      `this
   ==
 
 ::  ──────────────────────────────────────────────────────────────
 ++  on-leave
   |=  =path
   ^-  (quip card _this)
+  ~&  [%on-leave path src.bowl]
   =.  subscribers.state  (~(del in subscribers.state) src.bowl)
   =/  leave-card=card
-    [%give %fact ~[/chat] %poker-chat-update !>([%leave src.bowl])]
+    [%give %fact ~[/chat] %poker-chat-update !>(`chat-update:poker`[%leave src.bowl])]
   [[leave-card]~ this]
 
 ::  ──────────────────────────────────────────────────────────────
@@ -180,8 +219,6 @@
 
     %poker-chat-action
       =/  action  !<(chat-action:poker vase)
-      ~|  'poker-lobby: chat poke from non-subscriber'
-      ?>  (~(has in subscribers.state) src.bowl)
       ?-  -.action
         %send
           ?.  (lte (met 3 text.action) 280)
@@ -200,7 +237,7 @@
           =/  msg=chat-message:poker  [src.bowl now.bowl text.action]
           =.  messages.state  (snoc-capped messages.state msg 500)
           =/  broadcast=card
-            [%give %fact ~[/chat] %poker-chat-update !>([%message msg])]
+            [%give %fact ~[/chat] %poker-chat-update !>(`chat-update:poker`[%message msg])]
           [[broadcast]~ this]
 
         %presence
@@ -215,14 +252,14 @@
 
         %report
           ?.  !=(src.bowl target.action)
-            :_(this ~[[%give %fact ~[/chat] %poker-chat-update !>([%report-rejected target.action 'cannot report yourself'])]])
+            :_(this ~[[%give %fact ~[/chat] %poker-chat-update !>(`chat-update:poker`[%report-rejected target.action 'cannot report yourself'])]])
           ?.  (~(has in subscribers.state) target.action)
-            :_(this ~[[%give %fact ~[/chat] %poker-chat-update !>([%report-rejected target.action 'target not in lobby'])]])
+            :_(this ~[[%give %fact ~[/chat] %poker-chat-update !>(`chat-update:poker`[%report-rejected target.action 'target not in lobby'])]])
           ?.  (lte (met 3 memo.action) 280)
-            :_(this ~[[%give %fact ~[/chat] %poker-chat-update !>([%report-rejected target.action 'memo too long'])]])
+            :_(this ~[[%give %fact ~[/chat] %poker-chat-update !>(`chat-update:poker`[%report-rejected target.action 'memo too long'])]])
           =.  complaints.state  (record-complaint complaints.state target.action category.action)
           =/  ack=card
-            [%give %fact ~[/chat] %poker-chat-update !>([%report-acked target.action category.action])]
+            [%give %fact ~[/chat] %poker-chat-update !>(`chat-update:poker`[%report-acked target.action category.action])]
           [[ack]~ this]
       ==
 
@@ -377,22 +414,37 @@
 ++  on-agent
   |=  [=wire =sign:agent:gall]
   ^-  (quip card _this)
-  `this
+  ?+  wire  `this
+    [%chat ~]
+    ?.  ?=(%fact -.sign)  `this
+    :_  this
+    ~[[%give %fact ~[/chat] cage.sign]]
+  ==
 
 ::  ──────────────────────────────────────────────────────────────
 ++  on-arvo
   |=  [=wire sign=sign-arvo]
   ^-  (quip card _this)
-  ?.  ?=([%challenge-expire @ ~] wire)
-    (on-arvo:def wire sign)
-  =/  challenger  (slav %p i.t.wire)
-  =/  pin  pending-in.state
-  ?~  pin  `this
-  ?.  =(challenger challenger.u.pin)  `this
-  =.  pending-in.state  ~
-  =/  notify=card
-    [%give %fact ~[/challenges] %poker-challenge-notify !>([%timeout challenger])]
-  [[notify]~ this]
+  ?+  wire  (on-arvo:def wire sign)
+    ::  Deferred join broadcast — fires after cross-ship subscription is committed.
+    ::  Guard against the ship having left before the timer fired.
+    [%join-announce @ ~]
+      =/  ship  (slav %p i.t.wire)
+      ?.  (~(has in subscribers.state) ship)
+        `this
+      =/  join-card=card
+        [%give %fact ~[/chat] %poker-chat-update !>(`chat-update:poker`[%join ship])]
+      [[join-card]~ this]
+    [%challenge-expire @ ~]
+      =/  challenger  (slav %p i.t.wire)
+      =/  pin  pending-in.state
+      ?~  pin  `this
+      ?.  =(challenger challenger.u.pin)  `this
+      =.  pending-in.state  ~
+      =/  notify=card
+        [%give %fact ~[/challenges] %poker-challenge-notify !>([%timeout challenger])]
+      [[notify]~ this]
+  ==
 
 ::  ──────────────────────────────────────────────────────────────
 ++  on-peek
