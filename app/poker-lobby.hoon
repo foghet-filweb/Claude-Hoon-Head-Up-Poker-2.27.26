@@ -190,13 +190,7 @@
         %+  turn  (flop backlog)
         |=  msg=chat-message:poker
         [%give %fact ~ %poker-chat-update !>(`chat-update:poker`[%message msg])]
-      ::  Defer the join broadcast to the next Behn event so the cross-ship
-      ::  subscription is fully committed before we fan out via ~[/chat].
-      ::  Delivering a %fact to a newly-added remote subscriber from within
-      ::  on-watch return kicks them before the Ames ack round-trip completes.
-      =/  join-timer=card
-        [%pass /join-announce/(scot %p src.bowl) %arvo [%b %wait now.bowl]]
-      [(weld backlog-cards ~[join-timer]) this]
+      [backlog-cards this]
     [%challenges ~]
       `this
   ==
@@ -414,12 +408,7 @@
 ++  on-agent
   |=  [=wire =sign:agent:gall]
   ^-  (quip card _this)
-  ?+  wire  `this
-    [%chat ~]
-    ?.  ?=(%fact -.sign)  `this
-    :_  this
-    ~[[%give %fact ~[/chat] cage.sign]]
-  ==
+  `this
 
 ::  ──────────────────────────────────────────────────────────────
 ++  on-arvo
