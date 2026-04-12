@@ -1648,16 +1648,21 @@
   // ══════════════════════════════════════════════════════════════
 
   // ── Urbit API helpers ──────────────────────────────────────────
-  // uid: unique channel id for this session
-  const uid = `lobby-${Date.now()}-${Math.floor(Math.random() * 0xFFFF).toString(16)}`;
-  let   eventId   = 1;
+  // uid: unique channel id — regenerated on each full openChannel() reconnect
+  let uid     = '';
+  let eventId = 1;
   let   ourShip   = null;   // populated from /session after init
   let   channelOpen = false;
   let   pendingChallenge = null; // { ship, roomId } when we sent one
+  const LOBBY_HOST = 'forbes-marmet'; // all chat subscriptions and pokes target this ship
   let   hostShip   = null;   // lobby host ship (all chat routes through here)
 
   // Open the Eyre channel and begin SSE stream
   async function openChannel() {
+    // Generate a fresh channel uid and reset event counter for this connection
+    uid     = `lobby-${Date.now()}-${Math.floor(Math.random() * 0xFFFF).toString(16)}`;
+    eventId = 1;
+
     // Get our ship name from the session cookie path
     try {
       const res = await fetch('/session.js');
@@ -1670,15 +1675,14 @@
     await eyrePut([]);
     channelOpen = true;
 
-    // Lobby host is always forbes-marmet
-    hostShip = 'forbes-marmet';
-    // Subscribe to HOST's /chat (not own ship)
-    await eyreSubscribeShip(hostShip || ourShip, 'poker-lobby', '/chat', 'handle-chat');
+    // Lobby host is always forbes-marmet; all ships subscribe to and poke the host
+    hostShip = LOBBY_HOST;
+    // Subscribe to HOST's /chat — routes through Ames for non-host ships
+    await eyreSubscribeShip(hostShip, 'poker-lobby', '/chat', 'handle-chat');
+    // Subscribe to local /challenges (challenge notifications are ship-to-ship)
+    await eyreSubscribeShip(ourShip, 'poker-lobby', '/challenges', 'handle-challenges');
 
-    // /challenges subscription disabled — path not implemented in poker-lobby
-    // await eyreSubscribe('poker-lobby', '/challenges', 'handle-challenges');
-
-    // Open SSE stream
+    // Open SSE stream via EventSource on the Eyre channel
     openSSE();
 
     // Populate stats via scry
@@ -1753,28 +1757,39 @@
     await eyrePut([{ id: eventId++, action: 'ack', 'event-id': id }]);
   }
 
-  // Open the SSE stream and route events
+  // Open the SSE stream and route events via Eyre channel EventSource
   function openSSE() {
-    let lastCount = 0;
-    async function poll() {
-      try {
-        const res = await fetch('/~/scry/poker-lobby/backlog.json');
-        if (res.ok) {
-          const msgs = await res.json();
-          if (msgs.length > lastCount) {
-            const newMsgs = msgs.slice(lastCount);
-            for (const msg of newMsgs) {
-              const ship = msg.author;
-              const isUs = (ship === ourShip || '~' + ship === ourShip);
-              appendChat(ship, msg.text, isUs);
-            }
-            lastCount = msgs.length;
-          }
+    const es = new EventSource(`/~/channel/${uid}`);
+
+    es.onmessage = async (e) => {
+      let data;
+      try { data = JSON.parse(e.data); } catch(_) { return; }
+      console.log('[SSE event]', JSON.stringify(data));
+      if (data.id) await eyreAck(data.id);
+
+      if (data.response === 'diff') {
+        const { json } = data;
+        if (!json) return;
+        if (json['poker-chat-update'] !== undefined) {
+          handleChatUpdate(json['poker-chat-update']);
+        } else if (json['poker-challenge-notify'] !== undefined) {
+          handleChallengeNotify(json['poker-challenge-notify']);
         }
-      } catch(e) {}
-      setTimeout(poll, 2000);
-    }
-    poll();
+      }
+
+      if (data.response === 'quit') {
+        console.log('[SSE] received quit from server, full reconnect');
+        es.close();
+        // openChannel() will DELETE the old channel uid before generating a new one
+        setTimeout(openChannel, 2000);
+      }
+    };
+
+    es.onerror = () => {
+      console.log('[SSE] transient error, retrying on same channel uid:', uid);
+      es.close();
+      setTimeout(openSSE, 3000);
+    };
   }
 
   // ── Chat update handler ────────────────────────────────────────
@@ -1946,7 +1961,7 @@
     chatTimes = chatTimes.filter(t => now - t < 10000);
     if (chatTimes.length >= 3) return; // silent rate limit
     chatTimes.push(now);
-    // Poke poker-lobby with %poker-chat-action %message
+    // Poke the lobby HOST's poker-lobby — routes through Ames for non-host ships
     eyrePokeHost('poker-lobby', 'poker-chat-action', {
       'poker-chat-action': { message: { text } }
     }).catch(() => {});
