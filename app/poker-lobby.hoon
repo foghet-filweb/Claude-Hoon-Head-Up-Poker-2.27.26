@@ -230,6 +230,7 @@
           =.  rate-buckets.state  (~(put by rate-buckets.state) src.bowl bucket)
           =/  msg=chat-message:poker  [src.bowl now.bowl text.action]
           =.  messages.state  (snoc-capped messages.state msg 500)
+          ~&  [%send-broadcast src=src.bowl subs=subscribers.state]
           =/  broadcast=card
             [%give %fact ~[/chat] %poker-chat-update !>(`chat-update:poker`[%message msg])]
           [[broadcast]~ this]
