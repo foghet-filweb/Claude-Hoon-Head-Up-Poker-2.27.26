@@ -183,14 +183,7 @@
       ::  TODO operator gate — filter by parent star for production deployment
       =.  subscribers.state   (~(put in subscribers.state) src.bowl)
       =.  unique-ships.state  (~(put in unique-ships.state) src.bowl)
-      =/  backlog  (scag 5 messages.state)
-      ::  Send backlog only to the new subscriber (~, not ~[/chat]) so existing
-      ::  subscribers don't receive replayed messages on every new join.
-      =/  backlog-cards=(list card)
-        %+  turn  (flop backlog)
-        |=  msg=chat-message:poker
-        [%give %fact ~ %poker-chat-update !>(`chat-update:poker`[%message msg])]
-      [backlog-cards this]
+      [~ this]
     [%challenges ~]
       `this
   ==
@@ -200,10 +193,9 @@
   |=  =path
   ^-  (quip card _this)
   ~&  [%on-leave path src.bowl]
-  =.  subscribers.state  (~(del in subscribers.state) src.bowl)
-  =/  leave-card=card
-    [%give %fact ~[/chat] %poker-chat-update !>(`chat-update:poker`[%leave src.bowl])]
-  [[leave-card]~ this]
+  =.  subscribers.state   (~(del in subscribers.state) src.bowl)
+  =.  unique-ships.state  (~(del in unique-ships.state) src.bowl)
+  [~ this]
 
 ::  ──────────────────────────────────────────────────────────────
 ++  on-poke
@@ -374,7 +366,7 @@
       =/  cancel-timer=card
         [%pass /challenge-expire/(scot %p challenger) %arvo [%b %rest expires.inc]]
       =/  decline-poke=card
-        [%pass /challenge-decline/(scot %p challenger) %agent [challenger %poker-lobby] %poke %poker-decline-challenge !>(challenger)]
+        [%pass /challenge-decline/(scot %p challenger) %agent [challenger %poker-lobby] %poke %poker-challenge !>(`challenge:poker`[%decline ~])]
       [~[cancel-timer decline-poke] this]
 
     %poker-lobby-notice

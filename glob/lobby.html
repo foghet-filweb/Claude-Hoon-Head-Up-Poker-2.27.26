@@ -2131,7 +2131,7 @@
 
     // Populate overlay with challenger info
     document.querySelector('.overlay-challenger').innerHTML =
-      `<span>from</span>~${challenger}`;
+      `<span>from</span>${challenger}`;
     if (challenge) {
       document.getElementById('overlaySB').textContent    = challenge['small-blind'] || '—';
       document.getElementById('overlayBB').textContent    = challenge['big-blind']   || '—';
