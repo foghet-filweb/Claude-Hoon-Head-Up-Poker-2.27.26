@@ -15,6 +15,7 @@ app/*
 !sur/
 sur/*
 !sur/poker.hoon
+!sur/poker-*.hoon
 
 !lib/
 lib/*

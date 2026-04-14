@@ -1,3 +1,10 @@
+::  desk.bill — CC session Apr 13 branch adds poker-ledger and poker-vault
+::  poker-settle-cc is the CC escrow approach; reconcile with poker-settle at merge
 :~  %poker-lobby
     %poker-room
+    %poker-settle
+    %poker-ledger
+    %poker-vault
+    %poker-log
+    %poker-log-bridge
 ==

@@ -2442,6 +2442,263 @@
   </div>
 </div>
 
+
+<!-- ═══════════════════════════════════════════════════════════
+     CC SESSION APR 13 — new UI panels (reconcile with existing at merge)
+     Includes: presence, challenges, post-game complaint, vault/withdrawal
+     ═══════════════════════════════════════════════════════════ -->
+
+<!-- Presence Panel -->
+<div id="presence-panel" style="display:none;">
+  <div class="presence-col"><h3>In Lobby</h3><ul id="lobby-list"><li class="empty">No ships in lobby</li></ul></div>
+  <div class="presence-col"><h3>In Game</h3><ul id="gaming-list"><li class="empty">No active games</li></ul></div>
+</div>
+
+<!-- Challenge Section -->
+<section id="challenge-section" style="display:none;">
+  <h3>Challenge a Ship</h3>
+  <form id="challenge-form">
+    <label>Target ship<input id="ch-target" type="text" placeholder="~sampel-palnet" required /></label>
+    <fieldset><legend>Game limit (set one or both)</legend>
+      <label>Max hands<input id="ch-hands" type="number" min="0" placeholder="0 = unlimited" /></label>
+      <label>Funds cap (FHLO)<input id="ch-funds-cap" type="number" min="0" placeholder="0 = no cap" /></label>
+    </fieldset>
+    <fieldset><legend>Blinds (required)</legend>
+      <label>Small blind<input id="ch-small-blind" type="number" min="1" required /></label>
+      <label>Big blind<input id="ch-big-blind" type="number" min="2" required /></label>
+    </fieldset>
+    <button type="submit">Send Challenge</button>
+  </form>
+  <div id="challenge-panels">
+    <div class="ch-panel"><h4>Incoming</h4><div id="incoming-challenges"></div></div>
+    <div class="ch-panel"><h4>Outgoing</h4><div id="outgoing-challenges"></div></div>
+  </div>
+</section>
+
+<!-- Post-Game Overlay -->
+<div id="post-game-overlay" style="display:none;">
+  <div id="post-game-modal">
+    <h2>Session Ended</h2>
+    <p id="pg-status-msg"></p>
+    <p>Opponent: <strong id="pg-opponent-name"></strong></p>
+    <div id="pg-gate">
+      <button class="pg-btn-primary" onclick="openComplaintForm()">File a Complaint</button>
+      <button class="pg-btn-secondary" onclick="submitNoComplaint()">No Complaint — Return to Lobby</button>
+    </div>
+    <form id="pg-complaint-form" style="display:none;" onsubmit="submitComplaint(event)">
+      <fieldset><legend>Reason(s) for complaint</legend>
+        <label><input class="complaint-reason-cb" type="checkbox" value="slow-play" />Slow play / stalling</label>
+        <label><input class="complaint-reason-cb" type="checkbox" value="abusive-language" />Abusive language</label>
+        <label><input class="complaint-reason-cb" type="checkbox" value="broken-hand" />Failure to complete agreed hands</label>
+        <label><input class="complaint-reason-cb" type="checkbox" value="other" onchange="document.getElementById('pg-notes-hint').style.display=this.checked?'block':'none'" />Other</label>
+      </fieldset>
+      <label for="pg-notes">Notes<span id="pg-notes-hint" style="display:none;color:#f90;"> Required for "Other".</span>
+        <textarea id="pg-notes" rows="3" maxlength="500" placeholder="Optional details..."></textarea>
+      </label>
+      <div class="pg-actions">
+        <button type="submit" class="pg-btn-primary">Submit Complaint</button>
+        <button type="button" class="pg-btn-secondary" onclick="submitNoComplaint()">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Wallet Submission Overlay -->
+<div id="wallet-overlay" style="display:none;">
+  <div id="wallet-modal">
+    <h2>Submit Your Wallet</h2>
+    <p>Your stake: <strong id="wf-amount"></strong></p>
+    <form id="wallet-form">
+      <label for="wf-wallet">ETH Wallet Address
+        <input id="wf-wallet" type="text" placeholder="0x742d35Cc..." pattern="^0x[0-9a-fA-F]{40}$" required />
+      </label>
+      <p class="wf-hint">Funds held in escrow until session ends.</p>
+      <button id="wf-submit-btn" type="submit">Confirm Wallet</button>
+      <p id="wf-submitted-msg" style="display:none;color:#2a5;">Submitted — waiting for opponent...</p>
+    </form>
+  </div>
+</div>
+
+<!-- FHLO Vault Panel -->
+<section id="vault-panel" style="display:none;">
+  <h3>FHLO Balance</h3>
+  <table class="vault-table">
+    <tr><th>Balance</th><td id="vault-balance">—</td></tr>
+    <tr><th>ETH Wallet</th><td id="vault-wallet" class="mono">—</td></tr>
+    <tr><th>Total Deposited</th><td id="vault-deposited">—</td></tr>
+    <tr><th>Total Withdrawn</th><td id="vault-withdrawn">—</td></tr>
+  </table>
+  <form id="set-wallet-form">
+    <label>Connect ETH Wallet<input id="set-wallet-input" type="text" placeholder="0x..." pattern="^0x[0-9a-fA-F]{40}$" /></label>
+    <button type="submit">Save Wallet</button>
+  </form>
+  <form id="withdraw-form">
+    <label>Withdraw FHLO<input id="withdraw-amount" type="number" min="0.001" step="0.001" placeholder="0.000" /></label>
+    <button id="vault-withdraw-btn" type="submit" disabled>Withdraw to ETH Wallet</button>
+    <p id="withdraw-pending-msg" style="display:none;color:#2a5;">Withdrawal submitted — pending bridge confirmation.</p>
+  </form>
+</section>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// CC SESSION APR 13 — JS additions
+// ═══════════════════════════════════════════════════════════
+
+// ── Presence ──────────────────────────────────────────────
+function subscribePresence() {
+  urb.subscribe({ app:'poker-lobby', path:'/presence', event:handlePresence,
+    err:(e)=>console.warn('presence err',e), quit:()=>setTimeout(subscribePresence,2000) });
+}
+function handlePresence(d) {
+  if (d.type!=='presence') return;
+  renderList('lobby-list', d.lobby, 'No ships in lobby');
+  renderList('gaming-list', d.gaming, 'No active games');
+}
+function renderList(id, ships, empty) {
+  const el=document.getElementById(id);
+  el.innerHTML = (!ships||!ships.length) ? `<li class="empty">${empty}</li>`
+    : ships.map(s=>`<li class="ship-entry">${s}</li>`).join('');
+}
+
+// ── Challenges ────────────────────────────────────────────
+function subscribeChallenges() {
+  urb.subscribe({ app:'poker-lobby', path:'/challenges', event:handleChallengeEvent,
+    err:(e)=>console.warn('challenges err',e), quit:()=>setTimeout(subscribeChallenges,2000) });
+}
+function handleChallengeEvent(c) {
+  const mine=c.challenger===ourShip, theirs=c.target===ourShip;
+  if (!mine&&!theirs) return;
+  const terms=`${c.hands>0?c.hands+' hands':''}${c.hands>0&&c.fundsCap>0?' + ':''}${c.fundsCap>0?c.fundsCap+' FHLO cap':''} · ${c.smallBlind}/${c.bigBlind} blinds`;
+  const el=document.getElementById(`challenge-${c.id}`);
+  if (el) el.remove();
+  if (c.status==='pending') renderChallengeCard(c,terms,mine);
+  else if (['completed','abandoned'].includes(c.status)) {
+    const shownPostGame = window._shownPostGame||(window._shownPostGame=new Set());
+    if (!shownPostGame.has(c.id)) { shownPostGame.add(c.id); showPostGame(c.id,mine?c.target:c.challenger,c.status); }
+  }
+}
+function renderChallengeCard(c,terms,mine) {
+  const el=document.getElementById(mine?'outgoing-challenges':'incoming-challenges');
+  const card=document.createElement('div'); card.className='challenge-card'; card.id=`challenge-${c.id}`;
+  card.innerHTML=mine
+    ? `<span class="ch-ship">→ ${c.target}</span><span class="ch-terms">${terms}</span><button onclick="cancelChallenge(${c.id})">Cancel</button>`
+    : `<span class="ch-ship">${c.challenger} challenges you</span><span class="ch-terms">${terms}</span><button onclick="respondChallenge(${c.id},'accept')">Accept</button><button onclick="respondChallenge(${c.id},'decline')">Decline</button>`;
+  el.prepend(card);
+}
+function issueChallenge(e) {
+  e.preventDefault();
+  const hands=parseInt(document.getElementById('ch-hands').value)||0;
+  const fundsCap=parseInt(document.getElementById('ch-funds-cap').value)||0;
+  const smallBlind=parseInt(document.getElementById('ch-small-blind').value);
+  const bigBlind=parseInt(document.getElementById('ch-big-blind').value);
+  if (!hands&&!fundsCap){alert('Set a hand limit, a funds cap, or both.');return;}
+  if (!smallBlind||!bigBlind||bigBlind<=smallBlind){alert('Big blind must exceed small blind.');return;}
+  urb.poke({app:'poker-lobby',mark:'poker-challenge-action',
+    json:{action:'issue',target:document.getElementById('ch-target').value.trim(),hands,fundsCap,smallBlind,bigBlind},
+    onSuccess:()=>document.getElementById('challenge-form').reset(),
+    onError:(e)=>console.error('challenge failed',e)});
+}
+function respondChallenge(id,action){urb.poke({app:'poker-lobby',mark:'poker-challenge-action',json:{action,id}});}
+function cancelChallenge(id){urb.poke({app:'poker-lobby',mark:'poker-challenge-action',json:{action:'cancel',id}});}
+document.getElementById('challenge-form').addEventListener('submit',issueChallenge);
+
+// ── Post-Game / Complaint ──────────────────────────────────
+function showPostGame(gameId,opponent,status) {
+  document.getElementById('pg-opponent-name').textContent=opponent;
+  document.getElementById('pg-status-msg').textContent=status==='abandoned'?'Game ended early.':'Game complete.';
+  const ov=document.getElementById('post-game-overlay');
+  ov.dataset.gameId=gameId; ov.dataset.respondent=opponent;
+  ['pg-gate','pg-complaint-form'].forEach(id=>document.getElementById(id).style.display=id==='pg-gate'?'block':'none');
+  ov.style.display='flex';
+}
+function openComplaintForm(){
+  document.getElementById('pg-gate').style.display='none';
+  document.getElementById('pg-complaint-form').style.display='block';
+}
+function submitNoComplaint() {
+  const ov=document.getElementById('post-game-overlay');
+  urb.poke({app:'poker-lobby',mark:'poker-complaint-action',
+    json:{action:'no-complaint',gameId:parseInt(ov.dataset.gameId)},
+    onSuccess:returnToLobby, onError:returnToLobby});
+}
+function submitComplaint(e) {
+  e.preventDefault();
+  const ov=document.getElementById('post-game-overlay');
+  const reasons=Array.from(document.querySelectorAll('.complaint-reason-cb:checked')).map(cb=>cb.value);
+  const notes=document.getElementById('pg-notes').value.trim();
+  if (!reasons.length){alert('Select at least one reason.');return;}
+  if (reasons.includes('other')&&!notes){alert('"Other" requires notes.');return;}
+  urb.poke({app:'poker-lobby',mark:'poker-complaint-action',
+    json:{action:'file',gameId:parseInt(ov.dataset.gameId),respondent:ov.dataset.respondent,reasons,notes},
+    onSuccess:returnToLobby, onError:()=>returnToLobby()});
+}
+function returnToLobby(){document.getElementById('post-game-overlay').style.display='none';}
+
+// ── Escrow / Wallet ────────────────────────────────────────
+urb.subscribe({app:'poker-settle-cc',path:'/escrow',event:handleEscrowEvent,
+  err:(e)=>console.warn('escrow err',e),quit:()=>setTimeout(()=>urb.subscribe({app:'poker-settle-cc',path:'/escrow',event:handleEscrowEvent}),2000)});
+function handleEscrowEvent(e) {
+  const isP1=e.p1.who===ourShip, isP2=e.p2.who===ourShip;
+  if (!isP1&&!isP2) return;
+  const my=isP1?e.p1:e.p2;
+  if (e.status==='awaiting-wallets'&&!my.submitted) showWalletForm(e.gameId,my.amount);
+  if (e.status==='locked') { hideWalletForm(); }
+}
+const FHLO_DEC=1000n;
+function fhloDisplay(raw){const n=BigInt(raw);return `${n/FHLO_DEC}.${String(n%FHLO_DEC).padStart(3,'0')} FHLO`;}
+function showWalletForm(gameId,amountRaw){
+  const ov=document.getElementById('wallet-overlay');
+  document.getElementById('wf-amount').textContent=fhloDisplay(amountRaw);
+  ov.dataset.gameId=gameId; ov.style.display='flex';
+}
+function hideWalletForm(){document.getElementById('wallet-overlay').style.display='none';}
+function submitWallet(e){
+  e.preventDefault();
+  const wallet=document.getElementById('wf-wallet').value.trim();
+  if (!wallet.match(/^0x[0-9a-fA-F]{40}$/)){alert('Invalid ETH address.');return;}
+  urb.poke({app:'poker-settle-cc',mark:'poker-escrow-action',
+    json:{action:'submit-wallet',gameId:parseInt(document.getElementById('wallet-overlay').dataset.gameId),wallet},
+    onSuccess:()=>{document.getElementById('wf-submitted-msg').style.display='block';document.getElementById('wf-submit-btn').disabled=true;},
+    onError:(err)=>console.error('wallet submit failed',err)});
+}
+document.getElementById('wallet-form').addEventListener('submit',submitWallet);
+
+// ── Vault ──────────────────────────────────────────────────
+urb.subscribe({app:'poker-vault',path:`/vault/${ourShip}`,event:handleVaultUpdate,
+  err:(e)=>console.warn('vault err',e),quit:()=>setTimeout(()=>urb.subscribe({app:'poker-vault',path:`/vault/${ourShip}`,event:handleVaultUpdate}),2000)});
+function handleVaultUpdate(d){
+  if (!d.found) return;
+  document.getElementById('vault-balance').textContent=fhloDisplay(d.balance);
+  document.getElementById('vault-wallet').textContent=d.ethWallet||'No wallet connected';
+  document.getElementById('vault-deposited').textContent=fhloDisplay(d.totalDeposited);
+  document.getElementById('vault-withdrawn').textContent=fhloDisplay(d.totalWithdrawn);
+  document.getElementById('vault-withdraw-btn').disabled=!d.ethWallet||d.balance==='0';
+  document.getElementById('vault-panel').dataset.balance=d.balance;
+}
+function setWallet(e){
+  e.preventDefault();
+  const wallet=document.getElementById('set-wallet-input').value.trim();
+  if (!wallet.match(/^0x[0-9a-fA-F]{40}$/)){alert('Invalid ETH address.');return;}
+  urb.poke({app:'poker-vault',mark:'poker-vault-action',json:{action:'set-wallet',who:ourShip,wallet},
+    onSuccess:()=>document.getElementById('set-wallet-form').reset(),onError:(e)=>console.error(e)});
+}
+function submitWithdrawal(e){
+  e.preventDefault();
+  const balance=BigInt(document.getElementById('vault-panel').dataset.balance||'0');
+  const amount=BigInt(Math.round(parseFloat(document.getElementById('withdraw-amount').value)*Number(FHLO_DEC)));
+  if (amount<=0n){alert('Enter amount > 0.');return;}
+  if (amount>balance){alert(`Insufficient balance.`);return;}
+  urb.poke({app:'poker-vault',mark:'poker-vault-action',json:{action:'withdraw',who:ourShip,amount:String(amount)},
+    onSuccess:()=>{document.getElementById('withdraw-form').reset();document.getElementById('withdraw-pending-msg').style.display='block';},
+    onError:(err)=>console.error('withdrawal failed',err)});
+}
+document.getElementById('set-wallet-form').addEventListener('submit',setWallet);
+document.getElementById('withdraw-form').addEventListener('submit',submitWithdrawal);
+
+// Init subscriptions
+subscribePresence();
+subscribeChallenges();
+</script>
 </body>
 </html>
 
