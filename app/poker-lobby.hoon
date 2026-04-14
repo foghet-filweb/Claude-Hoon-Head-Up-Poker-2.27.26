@@ -395,6 +395,10 @@
       =/  host  !<(@p vase)
       =.  lobby-host.state  `host
       `this
+
+    %poker-decline-challenge
+      ::  Legacy mark — ignore silently to avoid crash on old clients
+      `this
   ==
 
 ::  ──────────────────────────────────────────────────────────────
