@@ -20,7 +20,7 @@
         %+  mk  %poker-chat-update
         %+  mk  %message
         :-  %o
-        %-  malt
+        %-  ~(gas by *(map @t ^json))
         :~  ['ship'  [%s (scot %p author.msg)]]
             ['text'  [%s text.msg]]
             ['when'  [%s (scot %da timestamp.msg)]]
