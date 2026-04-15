@@ -26,9 +26,9 @@
                         :*  %o
                             %-  malt
                             ^-  (list [@t ^json])
-                            :~  ['ship'  ^json+[%s (scot %p author.msg)]]
-                                ['text'  ^json+[%s text.msg]]
-                                ['when'  ^json+[%s (scot %da timestamp.msg)]]
+                            :~  ['ship'  ^-(^json [%s (scot %p author.msg)])]
+                                ['text'  ^-(^json [%s text.msg])]
+                                ['when'  ^-(^json [%s (scot %da timestamp.msg)])]
                             ==
                         ==
                     ==
@@ -44,7 +44,7 @@
                 :*  %o
                     %-  malt
                     ^-  (list [@t ^json])
-                    :~  ['join'  ^json+[%s (scot %p ship.u)]]
+                    :~  ['join'  ^-(^json [%s (scot %p ship.u)])]
                     ==
                 ==
             ==
@@ -58,7 +58,7 @@
                 :*  %o
                     %-  malt
                     ^-  (list [@t ^json])
-                    :~  ['leave'  ^json+[%s (scot %p ship.u)]]
+                    :~  ['leave'  ^-(^json [%s (scot %p ship.u)])]
                     ==
                 ==
             ==
@@ -72,7 +72,7 @@
                 :*  %o
                     %-  malt
                     ^-  (list [@t ^json])
-                    :~  ['challenge-notice'  ^json+[%s (scot %p challenger.u)]]
+                    :~  ['challenge-notice'  ^-(^json [%s (scot %p challenger.u)])]
                     ==
                 ==
             ==
@@ -86,7 +86,7 @@
                 :*  %o
                     %-  malt
                     ^-  (list [@t ^json])
-                    :~  ['report-acked'  ^json+[%s (scot %p target.u)]]
+                    :~  ['report-acked'  ^-(^json [%s (scot %p target.u)])]
                     ==
                 ==
             ==
@@ -100,7 +100,7 @@
                 :*  %o
                     %-  malt
                     ^-  (list [@t ^json])
-                    :~  ['report-rejected'  ^json+[%s reason.u]]
+                    :~  ['report-rejected'  ^-(^json [%s reason.u])]
                     ==
                 ==
             ==
