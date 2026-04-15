@@ -1,5 +1,6 @@
 ::  /mar/poker-chat-update.hoon
 /-  poker
+/+  format
 |_  u=chat-update:poker
 ++  grab
   |%
@@ -9,42 +10,42 @@
   |%
   ++  noun  u
   ++  json
-    ^-  ^json
-    =/  mk
-      |=  [k=@tas v=^json]
-      ^-  ^json
-      [%o (~(gas by *(map @t ^json)) ~[[k v]])]
+    =/  pr  pairs:enjs:format
+    =/  tx  text:enjs:format
     ?-  -.u
       %message
         =/  msg  chat-message.u
-        %+  mk  %poker-chat-update
-        %+  mk  %message
-        :-  %o
-        %-  ~(gas by *(map @t ^json))
-        :~  ['ship'  [%s (scot %p author.msg)]]
-            ['text'  [%s text.msg]]
-            ['when'  [%s (scot %da timestamp.msg)]]
+        %-  pr
+        :~  :-  'poker-chat-update'
+            %-  pr
+            :~  :-  'message'
+                %-  pr
+                :~  ['ship'  (tx (scot %p author.msg))]
+                    ['text'  (tx text.msg)]
+                    ['when'  (tx (scot %da timestamp.msg))]
+                ==
+            ==
         ==
       %join
-        %+  mk  %poker-chat-update
-        %+  mk  %join
-        [%s (scot %p ship.u)]
+        %-  pr
+        :~  ['poker-chat-update'  (pr ~[['join'  (tx (scot %p ship.u))]])]
+        ==
       %leave
-        %+  mk  %poker-chat-update
-        %+  mk  %leave
-        [%s (scot %p ship.u)]
+        %-  pr
+        :~  ['poker-chat-update'  (pr ~[['leave'  (tx (scot %p ship.u))]])]
+        ==
       %challenge-notice
-        %+  mk  %poker-chat-update
-        %+  mk  %challenge-notice
-        [%s (scot %p challenger.u)]
+        %-  pr
+        :~  ['poker-chat-update'  (pr ~[['challenge-notice'  (tx (scot %p challenger.u))]])]
+        ==
       %report-acked
-        %+  mk  %poker-chat-update
-        %+  mk  %report-acked
-        [%s (scot %p target.u)]
+        %-  pr
+        :~  ['poker-chat-update'  (pr ~[['report-acked'  (tx (scot %p target.u))]])]
+        ==
       %report-rejected
-        %+  mk  %poker-chat-update
-        %+  mk  %report-rejected
-        [%s reason.u]
+        %-  pr
+        :~  ['poker-chat-update'  (pr ~[['report-rejected'  (tx reason.u)]])]
+        ==
     ==
   --
 ++  grad  %noun
