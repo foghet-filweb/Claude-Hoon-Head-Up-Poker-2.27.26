@@ -15,15 +15,18 @@ app/*
 !sur/
 sur/*
 !sur/poker.hoon
+!sur/docket.hoon
 
 !lib/
 lib/*
 !lib/format.hoon
 !lib/poker-*.hoon
+!lib/docket.hoon
 
 !mar/
 mar/*
 !mar/poker-*.hoon
+!mar/docket-0.hoon
 
 !glob/
 !glob/**
