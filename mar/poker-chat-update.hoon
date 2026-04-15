@@ -21,10 +21,13 @@
     ?-  -.u
       %message
         =/  msg  chat-message.u
-        =/  s1  ['ship'  (str ^-(@t (scot %p author.msg)))]
-        =/  s2  ['text'  (str text.msg)]
-        =/  s3  ['when'  (str ^-(@t (scot %da timestamp.msg)))]
-        =/  fields  (obj ~[s1 s2 s3])
+        =/  k1  'ship'
+        =/  v1  (str ^-(@t (scot %p author.msg)))
+        =/  k2  'text'
+        =/  v2  (str text.msg)
+        =/  k3  'when'
+        =/  v3  (str ^-(@t (scot %da timestamp.msg)))
+        =/  fields  (obj ~[[k1 v1] [k2 v2] [k3 v3]])
         =/  inner  (obj ~[['message' fields]])
         (obj ~[['poker-chat-update' inner]])
       %join
