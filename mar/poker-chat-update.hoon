@@ -9,57 +9,102 @@
   |%
   ++  noun  u
   ++  json
-    =/  j    *^json
-    =/  obj
-      |=  a=(list [@t _j])
-      ^-  _j
-      [%o (~(gas by *(map @t _j)) a)]
-    =/  str
-      |=  a=@t
-      ^-  _j
-      [%s a]
+    ^-  ^json
     ?-  -.u
       %message
         =/  msg  chat-message.u
-        =/  k1  'ship'
-        =/  v1  (str ^-(@t (scot %p author.msg)))
-        =/  k2  'text'
-        =/  v2  (str text.msg)
-        =/  k3  'when'
-        =/  v3  (str ^-(@t (scot %da timestamp.msg)))
-        =/  fields  (obj ~[[k1 v1] [k2 v2] [k3 v3]])
-        =/  inner  (obj ~[['message' fields]])
-        (obj ~[['poker-chat-update' inner]])
+        :*  %o
+            %-  malt
+            ^-  (list [@t ^json])
+            :~  :-  'poker-chat-update'
+                ^-  ^json
+                :*  %o
+                    %-  malt
+                    ^-  (list [@t ^json])
+                    :~  :-  'message'
+                        ^-  ^json
+                        :*  %o
+                            %-  malt
+                            ^-  (list [@t ^json])
+                            :~  ['ship'  ^json+[%s (scot %p author.msg)]]
+                                ['text'  ^json+[%s text.msg]]
+                                ['when'  ^json+[%s (scot %da timestamp.msg)]]
+                            ==
+                        ==
+                    ==
+                ==
+            ==
+        ==
       %join
-        =/  k1  'join'
-        =/  v1  (str ^-(@t (scot %p ship.u)))
-        =/  inner  (obj ~[[k1 v1]])
-        =/  ko  'poker-chat-update'
-        (obj ~[[ko inner]])
+        :*  %o
+            %-  malt
+            ^-  (list [@t ^json])
+            :~  :-  'poker-chat-update'
+                ^-  ^json
+                :*  %o
+                    %-  malt
+                    ^-  (list [@t ^json])
+                    :~  ['join'  ^json+[%s (scot %p ship.u)]]
+                    ==
+                ==
+            ==
+        ==
       %leave
-        =/  k1  'leave'
-        =/  v1  (str ^-(@t (scot %p ship.u)))
-        =/  inner  (obj ~[[k1 v1]])
-        =/  ko  'poker-chat-update'
-        (obj ~[[ko inner]])
+        :*  %o
+            %-  malt
+            ^-  (list [@t ^json])
+            :~  :-  'poker-chat-update'
+                ^-  ^json
+                :*  %o
+                    %-  malt
+                    ^-  (list [@t ^json])
+                    :~  ['leave'  ^json+[%s (scot %p ship.u)]]
+                    ==
+                ==
+            ==
+        ==
       %challenge-notice
-        =/  k1  'challenge-notice'
-        =/  v1  (str ^-(@t (scot %p challenger.u)))
-        =/  inner  (obj ~[[k1 v1]])
-        =/  ko  'poker-chat-update'
-        (obj ~[[ko inner]])
+        :*  %o
+            %-  malt
+            ^-  (list [@t ^json])
+            :~  :-  'poker-chat-update'
+                ^-  ^json
+                :*  %o
+                    %-  malt
+                    ^-  (list [@t ^json])
+                    :~  ['challenge-notice'  ^json+[%s (scot %p challenger.u)]]
+                    ==
+                ==
+            ==
+        ==
       %report-acked
-        =/  k1  'report-acked'
-        =/  v1  (str ^-(@t (scot %p target.u)))
-        =/  inner  (obj ~[[k1 v1]])
-        =/  ko  'poker-chat-update'
-        (obj ~[[ko inner]])
+        :*  %o
+            %-  malt
+            ^-  (list [@t ^json])
+            :~  :-  'poker-chat-update'
+                ^-  ^json
+                :*  %o
+                    %-  malt
+                    ^-  (list [@t ^json])
+                    :~  ['report-acked'  ^json+[%s (scot %p target.u)]]
+                    ==
+                ==
+            ==
+        ==
       %report-rejected
-        =/  k1  'report-rejected'
-        =/  v1  (str reason.u)
-        =/  inner  (obj ~[[k1 v1]])
-        =/  ko  'poker-chat-update'
-        (obj ~[[ko inner]])
+        :*  %o
+            %-  malt
+            ^-  (list [@t ^json])
+            :~  :-  'poker-chat-update'
+                ^-  ^json
+                :*  %o
+                    %-  malt
+                    ^-  (list [@t ^json])
+                    :~  ['report-rejected'  ^json+[%s reason.u]]
+                    ==
+                ==
+            ==
+        ==
     ==
   --
 ++  grad  %noun
