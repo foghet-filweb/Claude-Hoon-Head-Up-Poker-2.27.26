@@ -16,13 +16,14 @@
       [%o (~(gas by *(map @t ^json)) ~[[k v]])]
     ?-  -.u
       %message
+        =/  msg  chat-message.u
         %+  mk  %poker-chat-update
         %+  mk  %message
         :-  %o
         %-  malt
-        :~  ['ship' [%s (scot %p author.chat-message.u)]]
-            ['text'  [%s text.chat-message.u]]
-            ['when'  [%s (scot %da timestamp.chat-message.u)]]
+        :~  ['ship'  s+(scot %p author.msg)]
+            ['text'  s+text.msg]
+            ['when'  s+(scot %da timestamp.msg)]
         ==
       %join
         %+  mk  %poker-chat-update
