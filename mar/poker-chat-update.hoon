@@ -14,18 +14,13 @@
     =/  tx  text:enjs:format
     ?-  -.u
       %message
-        =/  msg  chat-message.u
-        %-  pr
-        :~  :-  'poker-chat-update'
-            %-  pr
-            :~  :-  'message'
-                %-  pr
-                :~  ['ship'  (tx ^-(@t (scot %p author.msg)))]
-                    ['text'  (tx text.msg)]
-                    ['when'  (tx ^-(@t (scot %da timestamp.msg)))]
-                ==
-            ==
-        ==
+        =/  msg       chat-message.u
+        =/  ship-val  (tx ^-(@t (scot %p author.msg)))
+        =/  text-val  (tx text.msg)
+        =/  when-val  (tx ^-(@t (scot %da timestamp.msg)))
+        =/  inner     (pr ~[['ship' ship-val] ['text' text-val] ['when' when-val]])
+        =/  mid       (pr ~[['message' inner]])
+        (pr ~[['poker-chat-update' mid]])
       %join
         %-  pr
         :~  ['poker-chat-update'  (pr ~[['join'  (tx ^-(@t (scot %p ship.u)))]])]
