@@ -20,27 +20,27 @@
             %-  pr
             :~  :-  'message'
                 %-  pr
-                :~  ['ship'  (tx `@t`(scot %p author.msg))]
+                :~  ['ship'  (tx ^-(@t (scot %p author.msg)))]
                     ['text'  (tx text.msg)]
-                    ['when'  (tx `@t`(scot %da timestamp.msg))]
+                    ['when'  (tx ^-(@t (scot %da timestamp.msg)))]
                 ==
             ==
         ==
       %join
         %-  pr
-        :~  ['poker-chat-update'  (pr ~[['join'  (tx `@t`(scot %p ship.u))]])]
+        :~  ['poker-chat-update'  (pr ~[['join'  (tx ^-(@t (scot %p ship.u)))]])]
         ==
       %leave
         %-  pr
-        :~  ['poker-chat-update'  (pr ~[['leave'  (tx `@t`(scot %p ship.u))]])]
+        :~  ['poker-chat-update'  (pr ~[['leave'  (tx ^-(@t (scot %p ship.u)))]])]
         ==
       %challenge-notice
         %-  pr
-        :~  ['poker-chat-update'  (pr ~[['challenge-notice'  (tx `@t`(scot %p challenger.u))]])]
+        :~  ['poker-chat-update'  (pr ~[['challenge-notice'  (tx ^-(@t (scot %p challenger.u)))]])]
         ==
       %report-acked
         %-  pr
-        :~  ['poker-chat-update'  (pr ~[['report-acked'  (tx `@t`(scot %p target.u))]])]
+        :~  ['poker-chat-update'  (pr ~[['report-acked'  (tx ^-(@t (scot %p target.u)))]])]
         ==
       %report-rejected
         %-  pr
