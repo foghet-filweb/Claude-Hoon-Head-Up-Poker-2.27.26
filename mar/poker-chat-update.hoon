@@ -21,9 +21,9 @@
         %+  mk  %message
         :-  %o
         %-  malt
-        :~  ['ship'  s+(scot %p author.msg)]
-            ['text'  s+text.msg]
-            ['when'  s+(scot %da timestamp.msg)]
+        :~  ['ship'  [%s (scot %p author.msg)]]
+            ['text'  [%s text.msg]]
+            ['when'  [%s (scot %da timestamp.msg)]]
         ==
       %join
         %+  mk  %poker-chat-update
