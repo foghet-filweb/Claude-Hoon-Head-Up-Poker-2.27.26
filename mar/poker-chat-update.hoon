@@ -31,20 +31,35 @@
         =/  inner  (obj ~[['message' fields]])
         (obj ~[['poker-chat-update' inner]])
       %join
-        =/  inner  (obj ~[['join'  (str ^-(@t (scot %p ship.u)))]])
-        (obj ~[['poker-chat-update' inner]])
+        =/  k1  'join'
+        =/  v1  (str ^-(@t (scot %p ship.u)))
+        =/  inner  (obj ~[[k1 v1]])
+        =/  ko  'poker-chat-update'
+        (obj ~[[ko inner]])
       %leave
-        =/  inner  (obj ~[['leave'  (str ^-(@t (scot %p ship.u)))]])
-        (obj ~[['poker-chat-update' inner]])
+        =/  k1  'leave'
+        =/  v1  (str ^-(@t (scot %p ship.u)))
+        =/  inner  (obj ~[[k1 v1]])
+        =/  ko  'poker-chat-update'
+        (obj ~[[ko inner]])
       %challenge-notice
-        =/  inner  (obj ~[['challenge-notice'  (str ^-(@t (scot %p challenger.u)))]])
-        (obj ~[['poker-chat-update' inner]])
+        =/  k1  'challenge-notice'
+        =/  v1  (str ^-(@t (scot %p challenger.u)))
+        =/  inner  (obj ~[[k1 v1]])
+        =/  ko  'poker-chat-update'
+        (obj ~[[ko inner]])
       %report-acked
-        =/  inner  (obj ~[['report-acked'  (str ^-(@t (scot %p target.u)))]])
-        (obj ~[['poker-chat-update' inner]])
+        =/  k1  'report-acked'
+        =/  v1  (str ^-(@t (scot %p target.u)))
+        =/  inner  (obj ~[[k1 v1]])
+        =/  ko  'poker-chat-update'
+        (obj ~[[ko inner]])
       %report-rejected
-        =/  inner  (obj ~[['report-rejected'  (str reason.u)]])
-        (obj ~[['poker-chat-update' inner]])
+        =/  k1  'report-rejected'
+        =/  v1  (str reason.u)
+        =/  inner  (obj ~[[k1 v1]])
+        =/  ko  'poker-chat-update'
+        (obj ~[[ko inner]])
     ==
   --
 ++  grad  %noun
