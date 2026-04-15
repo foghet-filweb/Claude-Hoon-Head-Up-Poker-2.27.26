@@ -22,25 +22,25 @@
         =/  mid       (pr ~[['message' inner]])
         (pr ~[['poker-chat-update' mid]])
       %join
-        %-  pr
-        :~  ['poker-chat-update'  (pr ~[['join'  (tx ^-(@t (scot %p ship.u)))]])]
-        ==
+        =/  val    (tx ^-(@t (scot %p ship.u)))
+        =/  inner  (pr ~[['join' val]])
+        (pr ~[['poker-chat-update' inner]])
       %leave
-        %-  pr
-        :~  ['poker-chat-update'  (pr ~[['leave'  (tx ^-(@t (scot %p ship.u)))]])]
-        ==
+        =/  val    (tx ^-(@t (scot %p ship.u)))
+        =/  inner  (pr ~[['leave' val]])
+        (pr ~[['poker-chat-update' inner]])
       %challenge-notice
-        %-  pr
-        :~  ['poker-chat-update'  (pr ~[['challenge-notice'  (tx ^-(@t (scot %p challenger.u)))]])]
-        ==
+        =/  val    (tx ^-(@t (scot %p challenger.u)))
+        =/  inner  (pr ~[['challenge-notice' val]])
+        (pr ~[['poker-chat-update' inner]])
       %report-acked
-        %-  pr
-        :~  ['poker-chat-update'  (pr ~[['report-acked'  (tx ^-(@t (scot %p target.u)))]])]
-        ==
+        =/  val    (tx ^-(@t (scot %p target.u)))
+        =/  inner  (pr ~[['report-acked' val]])
+        (pr ~[['poker-chat-update' inner]])
       %report-rejected
-        %-  pr
-        :~  ['poker-chat-update'  (pr ~[['report-rejected'  (tx reason.u)]])]
-        ==
+        =/  val    (tx reason.u)
+        =/  inner  (pr ~[['report-rejected' val]])
+        (pr ~[['poker-chat-update' inner]])
     ==
   --
 ++  grad  %noun
