@@ -18,7 +18,6 @@
 ::    }
 ::
 /-  poker
-/+  format
 |%
 +$  send-challenge
   $:  target=@p
@@ -32,20 +31,36 @@
   ++  json
     |=  j=^json
     ^-  send-challenge
-    =/  inner   ((ot ~[poker-send-challenge+jo]) j)
+    ?>  ?=([%o *] j)
+    ?>  (~(has by p.j) 'poker-send-challenge')
+    =/  inner-json  (~(got by p.j) 'poker-send-challenge')
+    ?>  ?=([%o *] inner-json)
+    =/  inner  p.inner-json
     =/  target=@p
-      (slav %p (cat 3 '~' ((ot ~[target+so]) inner)))
+      =/  v  (~(got by inner) 'target')
+      ?>  ?=([%s *] v)
+      (slav %p (cat 3 '~' p.v))
     =/  game=game-type:poker
-      =/  g  (~(get by inner) 'game')
-      ?~  g  %nlh
-      ?+  (so:dejs:format u.g)  %nlh
+      =/  v  (~(get by inner) 'game')
+      ?~  v  %nlh
+      ?.  ?=([%s *] u.v)  %nlh
+      ?+  p.u.v  %nlh
         %nlh  %nlh
         %plo  %plo
         %fcd  %fcd
       ==
-    =/  sb=@ud    ((ot ~[small-blind+ni]) inner)
-    =/  bb=@ud    ((ot ~[big-blind+ni])   inner)
-    =/  mr=@ud    ((ot ~[min-raise+ni])   inner)
+    =/  sb=@ud
+      =/  v  (~(got by inner) 'small-blind')
+      ?>  ?=([%n *] v)
+      (slav %ud p.v)
+    =/  bb=@ud
+      =/  v  (~(got by inner) 'big-blind')
+      ?>  ?=([%n *] v)
+      (slav %ud p.v)
+    =/  mr=@ud
+      =/  v  (~(got by inner) 'min-raise')
+      ?>  ?=([%n *] v)
+      (slav %ud p.v)
     =/  bi=@ud
       =/  v  (~(get by inner) 'buy-in')
       ?~  v  (mul bb 50)

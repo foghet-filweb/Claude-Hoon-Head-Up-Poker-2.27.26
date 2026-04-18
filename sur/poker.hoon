@@ -316,6 +316,15 @@
       ==
   ==
 
+::  +$ challenge-notify: fact mark broadcast by lobby host on /challenges
++$  challenge-notify
+  $%  [%incoming challenger=@p c=challenge]
+      [%accepted challenger=@p]
+      [%declined challenger=@p]
+      [%busy challenger=@p]
+      [%timeout challenger=@p]
+  ==
+
 ::  +$ chat-update: fact mark broadcast by lobby host
 +$  chat-update
   $%  [%message =chat-message]
