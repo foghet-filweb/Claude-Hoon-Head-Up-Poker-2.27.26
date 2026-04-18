@@ -10,101 +10,39 @@
   ++  noun  u
   ++  json
     ^-  ^json
+    =/  mk
+      |=  [k=@tas v=^json]
+      ^-  ^json
+      [%o (~(gas by *(map @t ^json)) ~[[k v]])]
     ?-  -.u
       %message
-        =/  msg  chat-message.u
-        :*  %o
-            %-  malt
-            ^-  (list [@t ^json])
-            :~  :-  'poker-chat-update'
-                ^-  ^json
-                :*  %o
-                    %-  malt
-                    ^-  (list [@t ^json])
-                    :~  :-  'message'
-                        ^-  ^json
-                        :*  %o
-                            %-  malt
-                            ^-  (list [@t ^json])
-                            :~  ['ship'  ^-(^json [%s (scot %p author.msg)])]
-                                ['text'  ^-(^json [%s text.msg])]
-                                ['when'  ^-(^json [%s (scot %da timestamp.msg)])]
-                            ==
-                        ==
-                    ==
-                ==
-            ==
+        %+  mk  %poker-chat-update
+        %+  mk  %message
+        %-  pairs:enjs:format
+        :~  ['ship' s+(scot %p author.chat-message.u)]
+            ['text' s+text.chat-message.u]
+            ['when' s+(scot %da timestamp.chat-message.u)]
         ==
       %join
-        :*  %o
-            %-  malt
-            ^-  (list [@t ^json])
-            :~  :-  'poker-chat-update'
-                ^-  ^json
-                :*  %o
-                    %-  malt
-                    ^-  (list [@t ^json])
-                    :~  ['join'  ^-(^json [%s (scot %p ship.u)])]
-                    ==
-                ==
-            ==
-        ==
+        %+  mk  %poker-chat-update
+        %+  mk  %join
+        [%s (scot %p ship.u)]
       %leave
-        :*  %o
-            %-  malt
-            ^-  (list [@t ^json])
-            :~  :-  'poker-chat-update'
-                ^-  ^json
-                :*  %o
-                    %-  malt
-                    ^-  (list [@t ^json])
-                    :~  ['leave'  ^-(^json [%s (scot %p ship.u)])]
-                    ==
-                ==
-            ==
-        ==
+        %+  mk  %poker-chat-update
+        %+  mk  %leave
+        [%s (scot %p ship.u)]
       %challenge-notice
-        :*  %o
-            %-  malt
-            ^-  (list [@t ^json])
-            :~  :-  'poker-chat-update'
-                ^-  ^json
-                :*  %o
-                    %-  malt
-                    ^-  (list [@t ^json])
-                    :~  ['challenge-notice'  ^-(^json [%s (scot %p challenger.u)])]
-                    ==
-                ==
-            ==
-        ==
+        %+  mk  %poker-chat-update
+        %+  mk  %challenge-notice
+        [%s (scot %p challenger.u)]
       %report-acked
-        :*  %o
-            %-  malt
-            ^-  (list [@t ^json])
-            :~  :-  'poker-chat-update'
-                ^-  ^json
-                :*  %o
-                    %-  malt
-                    ^-  (list [@t ^json])
-                    :~  ['report-acked'  ^-(^json [%s (scot %p target.u)])]
-                    ==
-                ==
-            ==
-        ==
+        %+  mk  %poker-chat-update
+        %+  mk  %report-acked
+        [%s (scot %p target.u)]
       %report-rejected
-        :*  %o
-            %-  malt
-            ^-  (list [@t ^json])
-            :~  :-  'poker-chat-update'
-                ^-  ^json
-                :*  %o
-                    %-  malt
-                    ^-  (list [@t ^json])
-                    :~  ['report-rejected'  ^-(^json [%s reason.u])]
-                    ==
-                ==
-            ==
-        ==
+        %+  mk  %poker-chat-update
+        %+  mk  %report-rejected
+        [%s reason.u]
     ==
   --
 ++  grad  %noun

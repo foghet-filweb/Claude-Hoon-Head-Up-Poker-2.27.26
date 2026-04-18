@@ -22,28 +22,13 @@
     ?:  (~(has by act) 'presence')
       =/  pres  (~(got by act) 'presence')
       ?>  ?=([%s *] pres)
-      ?:  =(%join p.pres)  [%presence %join]
+      ?:  =('join' p.pres)  [%presence %join]
       [%presence %leave]
     !!
   --
 ++  grow
   |%
   ++  noun  a
-  ++  json
-    ^-  ^json
-    =/  wrap
-      |=  [k=cord v=^json]
-      ^-  ^json
-      [%o (~(gas by *(map cord ^json)) ~[[k v]])]
-    ?-  -.a
-      %send
-        (wrap %poker-chat-update (wrap %message [%s text.a]))
-      %presence
-        =/  pval  ?:(=(%join p.a) %join %leave)
-        (wrap %poker-chat-update (wrap %presence [%s (scot %tas pval)]))
-      %report
-        (wrap %poker-chat-update (wrap %complaint [%s %filed]))
-    ==
   --
 ++  grad  %noun
 --

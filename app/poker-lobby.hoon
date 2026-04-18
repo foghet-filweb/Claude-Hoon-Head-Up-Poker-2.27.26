@@ -134,7 +134,18 @@
     def   ~(. (default-agent this %.n) bowl)
 
 ::  ──────────────────────────────────────────────────────────────
-++  on-init   `this
+++  on-init
+  ^-  (quip card _this)
+  =/  host=@p
+    ?~  lobby-host.state
+      ~nec
+    u.lobby-host.state
+  =.  lobby-host.state  `host
+  ?.  =(our.bowl host)
+    ::  non-host: subscribe to host's /chat via Ames
+    :_  this
+    [%pass /host-chat %agent [host %poker-lobby] %watch /chat]~
+  `this
 
 ++  on-save   !>(state)
 ++  on-load
@@ -171,7 +182,15 @@
         ==
       %2  versioned(subscribers ~)
     ==
-  `this(state migrated)
+  =/  new-this  this(state migrated)
+  =/  host=@p
+    ?~  lobby-host.migrated
+      ~nec
+    u.lobby-host.migrated
+  ?.  =(our.bowl host)
+    :_  new-this
+    [%pass /host-chat %agent [host %poker-lobby] %watch /chat]~
+  `new-this
 
 ::  ──────────────────────────────────────────────────────────────
 ++  on-watch
@@ -223,6 +242,12 @@
           =/  msg=chat-message:poker  [src.bowl now.bowl text.action]
           =.  messages.state  (snoc-capped messages.state msg 500)
           ~&  [%send-broadcast src=src.bowl subs=subscribers.state]
+          =/  host=@p  (lobby-host-ship bowl lobby-host.state)
+          ?.  =(our.bowl host)
+            ::  not the host — forward to host via Ames
+            :_  this
+            [%pass /chat-fwd %agent [host %poker-lobby] %poke %poker-chat-action !>(`chat-action:poker`[%send text.action])]~
+          ::  we are the host — store and broadcast
           =/  broadcast=card
             [%give %fact ~[/chat] %poker-chat-update !>(`chat-update:poker`[%message msg])]
           [[broadcast]~ this]
@@ -405,7 +430,9 @@
 ++  on-agent
   |=  [=wire =sign:agent:gall]
   ^-  (quip card _this)
-  `this
+  ?.  ?=(%fact -.sign)  `this
+  ?.  ?=(%poker-chat-update p.cage.sign)  `this
+  [[%give %fact ~[/chat] %poker-chat-update q.cage.sign]~ this]
 
 ::  ──────────────────────────────────────────────────────────────
 ++  on-arvo

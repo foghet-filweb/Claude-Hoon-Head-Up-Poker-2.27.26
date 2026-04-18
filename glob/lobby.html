@@ -1678,7 +1678,7 @@
     // Lobby host is always forbes-marmet; all ships subscribe to and poke the host
     hostShip = LOBBY_HOST;
     // Subscribe to HOST's /chat — routes through Ames for non-host ships
-    await eyreSubscribeShip(hostShip, 'poker-lobby', '/chat', 'handle-chat');
+    await eyreSubscribe('poker-lobby', '/chat', 'handle-chat');
     // Subscribe to local /challenges (challenge notifications are ship-to-ship)
     await eyreSubscribeShip(ourShip, 'poker-lobby', '/challenges', 'handle-challenges');
 
@@ -1962,7 +1962,7 @@
     if (chatTimes.length >= 3) return; // silent rate limit
     chatTimes.push(now);
     // Poke the lobby HOST's poker-lobby — routes through Ames for non-host ships
-    eyrePokeHost('poker-lobby', 'poker-chat-action', {
+    eyrePoke('poker-lobby', 'poker-chat-action', {
       'poker-chat-action': { message: { text } }
     }).catch(() => {});
     chatInput.value = '';
@@ -2270,7 +2270,7 @@
     const selected = document.querySelector('input[name="lobby-complaint"]:checked');
     if (selected && complaintPeer) {
       try {
-        await eyrePokeHost('poker-lobby', 'poker-chat-action', {
+        await eyrePoke('poker-lobby', 'poker-chat-action', {
           'poker-chat-action': {
             complaint: {
               against:   complaintPeer,
