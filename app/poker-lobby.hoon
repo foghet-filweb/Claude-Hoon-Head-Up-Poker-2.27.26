@@ -187,9 +187,6 @@
     ?~  lobby-host.migrated
       ~nec
     u.lobby-host.migrated
-  ?.  =(our.bowl host)
-    :_  new-this
-    [%pass /host-chat %agent [host %poker-lobby] %watch /chat]~
   `new-this
 
 ::  ──────────────────────────────────────────────────────────────
@@ -317,7 +314,7 @@
           =/  spin-room=card
             [%pass /room/(scot %uv room-id) %agent [our.bowl %poker-room] %poke %poker-room-init !>([room-id src.bowl cfg our.bowl])]
           =/  nav=card
-            [%give %fact ~[/challenges] %poker-challenge-notify !>([%accepted src.bowl room-id])]
+            [%give %fact ~[/challenges] %poker-challenge-notify !>(`challenge-notify:poker`[%accepted src.bowl])]
           [~[notice spin-room nav] this]
 
         %decline
@@ -404,7 +401,7 @@
       =/  spin-room=card
         [%pass /room/(scot %uv room-id) %agent [our.bowl %poker-room] %poke %poker-room-init !>([room-id challenger cfg challenger])]
       =/  nav=card
-        [%give %fact ~[/challenges] %poker-challenge-notify !>([%accepted challenger room-id])]
+        [%give %fact ~[/challenges] %poker-challenge-notify !>(`challenge-notify:poker`[%accepted challenger])]
       [~[cancel-timer accept-poke spin-room nav] this]
 
     %poker-decline-challenge

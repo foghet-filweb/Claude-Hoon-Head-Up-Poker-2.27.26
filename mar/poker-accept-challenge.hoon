@@ -9,7 +9,7 @@
     ?>  ?=([%o *] j)
     =/  v  (~(got by p.j) 'poker-accept-challenge')
     ?>  ?=([%s *] v)
-    (slav %p (cat 3 '~' p.v))
+    (slav %p p.v)
   --
 ++  grow
   |%

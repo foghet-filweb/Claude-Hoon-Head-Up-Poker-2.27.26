@@ -1818,14 +1818,11 @@
       const challenge = notify.incoming;
       showOverlay(challenger, challenge);
     } else if (notify.accepted) {
-      // Challenge accepted — navigate to room (fires for both challenger and challengee)
-      const { target, 'room-id': roomId } = notify.accepted;
-      // target is already ~-prefixed from scot %p; strip for peer param
-      const peer = target.replace(/^~/, '');
+      const peer = (typeof notify.accepted === 'string' ? notify.accepted : notify.accepted.target || '').replace(/^~/, '');
       cancelChallengePulse();
-      appendSystemMsg(`${target} accepted — entering private room…`);
+      appendSystemMsg(`accepted — entering private room…`);
       setTimeout(() => {
-        window.location.href = `/apps/poker/room.html?room=${roomId}&peer=${peer}`;
+        window.location.href = `/apps/poker/room.html?peer=${peer}`;
       }, 800);
     } else if (notify.declined) {
       cancelChallengePulse(`${notify.declined.target} declined`);
