@@ -277,6 +277,7 @@
 
     %poker-challenge
       =/  c  !<(challenge:poker vase)
+      ~&  [%poker-challenge-received src=src.bowl tag=-.c]
       ?-  -.c
         %propose
           ::  TODO operator gate — filter by parent star for production deployment
@@ -331,8 +332,34 @@
           [[notify]~ this]
       ==
 
+    %poker-challenge-action
+      =/  act  !<(challenge-action:poker vase)
+      ~&  [%poker-challenge-action-called tag=-.act]
+      ?-  -.act
+        %issue
+          =/  expiry=@da  (add now.bowl ~m5)
+          =/  c=challenge:poker
+            :*  %propose
+                game=%nlh
+                small-blind=small-blind.terms.act
+                big-blind=big-blind.terms.act
+                min-raise=big-blind.terms.act
+                buy-in=(mul big-blind.terms.act 50)
+                hands=hands.terms.act
+                cap=cap.terms.act
+                expires=expiry
+            ==
+          =.  pending-out.state  (~(put by pending-out.state) target.act c)
+          :_  this
+          [%pass /challenge/(scot %p target.act) %agent [target.act %poker-lobby] %poke %poker-challenge !>(c)]~
+        %accept  `this
+        %decline  `this
+        %cancel  `this
+      ==
+
     %poker-send-challenge
       =/  payload  !<([target=@p config=game-config:poker] vase)
+      ~&  [%poker-send-challenge-called target=target.payload]
       ::  TODO operator gate — filter by parent star for production deployment
       =/  expiry=@da  (add now.bowl ~m5)
       =/  c=challenge:poker

@@ -1814,7 +1814,8 @@
   function handleChallengeNotify(notify) {
     if (notify.incoming) {
       // Someone challenged us — show the overlay
-      const { challenger, challenge } = notify.incoming;
+      const challenger = notify.incoming.challenger;
+      const challenge = notify.incoming;
       showOverlay(challenger, challenge);
     } else if (notify.accepted) {
       // Challenge accepted — navigate to room (fires for both challenger and challengee)
@@ -2081,16 +2082,13 @@
     const hands = parseInt(hlInput.value);
     const cap   = parseInt(clInput.value);
 
-    eyrePoke('poker-lobby', 'poker-send-challenge', {
-      'poker-send-challenge': {
-        target,
-        'small-blind': parseInt(sbInput.value),
-        'big-blind':   parseInt(bbInput.value),
-        'min-raise':   parseInt(mrInput.value),
-        'buy-in':      parseInt(document.getElementById('buyIn').value) || parseInt(bbInput.value) * 50,
-        'hands':       (!isNaN(hands) && hands > 0) ? hands : null,
-        'cap':         (!isNaN(cap)   && cap   > 0) ? cap   : null
-      }
+    eyrePoke('poker-lobby', 'poker-challenge-action', {
+      action:     'issue',
+      target,
+      smallBlind: parseInt(sbInput.value),
+      bigBlind:   parseInt(bbInput.value),
+      hands:      (!isNaN(hands) && hands > 0) ? hands : 0,
+      fundsCap:   (!isNaN(cap)   && cap   > 0) ? cap   : 0,
     }).catch(() => cancelChallengePulse('send failed'));
 
     // 60-second client-side timeout

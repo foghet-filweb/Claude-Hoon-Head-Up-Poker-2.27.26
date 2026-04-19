@@ -16,10 +16,16 @@
       [%o (~(gas by *(map @t ^json)) ~[[k v]])]
     ?-  -.u
       %incoming
-        =/  c  c.u
+        ?>  ?=(%propose -.c.u)
+        =/  jmap
+          |=  [k=@tas v=^json]
+          ^-  (map @t ^json)
+          (~(gas by *(map @t ^json)) ~[[k v]])
+        =/  inner
+          [%o (~(uni by (jmap %challenger [%s (scot %p challenger.u)])) (~(uni by (jmap %small-blind [%n (scot %ud small-blind.c.u)])) (~(uni by (jmap %big-blind [%n (scot %ud big-blind.c.u)])) (~(uni by (jmap %min-raise [%n (scot %ud min-raise.c.u)])) (jmap %buy-in [%n (scot %ud buy-in.c.u)])))))]
         %+  mk  %poker-challenge-notify
         %+  mk  %incoming
-        (mk %challenger [%s (scot %p challenger.u)])
+        inner
       %accepted
         %+  mk  %poker-challenge-notify
         %+  mk  %accepted

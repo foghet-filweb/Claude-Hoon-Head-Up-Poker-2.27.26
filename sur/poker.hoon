@@ -316,6 +316,14 @@
       ==
   ==
 
+::  +$ challenge-action: poke mark for browser challenge actions
++$  challenge-action
+  $%  [%issue target=@p terms=game-config]
+      [%accept id=@ud]
+      [%decline id=@ud]
+      [%cancel id=@ud]
+  ==
+
 ::  +$ challenge-notify: fact mark broadcast by lobby host on /challenges
 +$  challenge-notify
   $%  [%incoming challenger=@p c=challenge]

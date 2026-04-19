@@ -79,7 +79,7 @@
       ?+  u.v  ~
         [%n *]  `(slav %ud p.u.v)
       ==
-    [target game sb bb mr bi hands cap]
+    [target [game sb bb mr bi hands cap]]
   --
 ++  grow
   |%
