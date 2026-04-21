@@ -28,9 +28,12 @@
       |=  idx=@ud
       ^-  ^json
       =/  rank-names  `(list cord)`~['2' '3' '4' '5' '6' '7' '8' '9' 'T' 'J' 'Q' 'K' 'A']
+      =/  suit-names  `(list cord)`~['s' 'h' 'd' 'c']
       =/  r=@ud  (div idx 4)
-      %+  mk  %rank
-      [%s (snag r rank-names)]
+      =/  s=@ud  (mod idx 4)
+      =/  rn=cord  (snag r rank-names)
+      =/  sn=cord  (snag s suit-names)
+      [%o (~(gas by *(map @t ^json)) ~[['rank' `^json`[%s rn]] ['suit' `^json`[%s sn]]])]
     =/  card-list
       |=  cards=(list @ud)
       ^-  ^json
@@ -39,36 +42,33 @@
       |=  a=action:poker
       ^-  ^json
       ?-  -.a
-        %fold
-          %+  mk  %fold
-          [%b %.y]
-        %check
-          %+  mk  %check
-          [%b %.y]
-        %call
-          %+  mk  %call
+        %fold    %+  mk  %fold   `^json`[%b %.y]
+        %check   %+  mk  %check  `^json`[%b %.y]
+        %call    %+  mk  %call   `^json`[%b %.y]
+        %all-in
+          %+  mk  %all-in
           [%b %.y]
         %raise
           %+  mk  %raise
           %+  mk  %amount
           [%n (scot %ud amount.a)]
-        %all-in
-          %+  mk  %all-in
-          [%b %.y]
       ==
     ?-  -.u
       %hand-dealt
         %+  mk  %poker-room-update
         %+  mk  %hand-dealt
-        [%s 'ok']
+        %+  mk  %cards
+        (card-list hand.u)
       %your-turn
         %+  mk  %poker-room-update
         %+  mk  %your-turn
-        [%s (street-name street.u)]
+        [%o (~(gas by *(map @t ^json)) ~[['street' `^json`[%s (street-name street.u)]] ['pot' `^json`[%n (scot %ud pot.u)]] ['to-call' `^json`[%n (scot %ud to-call.u)]] ['min-raise' `^json`[%n (scot %ud min-raise.u)]] ['small-blind' `^json`[%n (scot %ud small-blind.u)]] ['big-blind' `^json`[%n (scot %ud big-blind.u)]]])]
       %peer-acted
+        =/  bs=^json
+          [%o (~(gas by *(map @t ^json)) ~[['pot' `^json`[%n (scot %ud pot.u)]] ['to-call' `^json`[%n (scot %ud to-call.u)]] ['peer-bet' `^json`[%n (scot %ud peer-bet.u)]]])]
         %+  mk  %poker-room-update
         %+  mk  %peer-acted
-        [%s 'ok']
+        [%o (~(gas by *(map @t ^json)) ~[['betting-state' bs] ['action' (action-json action.u)]])]
       %community-dealt
         %+  mk  %poker-room-update
         %+  mk  %community-dealt

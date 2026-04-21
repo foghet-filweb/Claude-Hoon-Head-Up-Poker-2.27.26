@@ -100,12 +100,12 @@
         `this
       =/  peer  peer.room-state.state
       =/  twire  timeout-wire.room-state.state
+      ~>  %slog.[0 leaf+"deal-action: phase={<phase.room-state.state>} action={<-.action>}"]
       ?+  -.action  `this
         %mp-seed
           =/  rs0  room-state.state
           ::  drop silently if not awaiting seeds (late or duplicate delivery)
-          ?.  ?=([%awaiting-seeds *] phase.rs0)
-            `this
+          ?.  ?=([%awaiting-seeds *] phase.rs0)  `this
           ::  store peer's seed in the slot we don't own
           =/  ph1
             ?:  =(role.state %alice)
@@ -152,7 +152,7 @@
         %mp-enc-deck
           ~|  'mp-enc-deck: wrong phase'
           =/  rs0  room-state.state
-          ?>  ?=([%alice-encrypting ~] phase.rs0)
+          ?.  ?=([%alice-encrypting ~] phase.rs0)  `this
           =/  actual-commit  (commit-deck:poker-sra deck.action room-id.rs0)
           ~|  'mp-enc-deck: commitment mismatch'
           ~>  %slog.[0 leaf+"mp-enc-deck: commit check passed, deck-len={<(lent deck.action)>}"]
@@ -177,7 +177,7 @@
         %mp-reenc-deck
           ~|  'mp-reenc-deck: wrong phase'
           =/  rs0  room-state.state
-          ?>  ?=([%bob-reencrypting *] phase.rs0)
+          ?.  ?=([%bob-reencrypting *] phase.rs0)  `this
           ~|  'mp-reenc-deck: wrong deck length'
           ?>  =(52 (lent deck.action))
           =/  our-key  (need our-key.rs0)
@@ -195,7 +195,8 @@
         %mp-partial-dec
           ~|  'mp-partial-dec: wrong phase'
           =/  rs0  room-state.state
-          ?>  ?=([%dealing *] phase.rs0)
+          ?.  ?=([%dealing *] phase.rs0)  `this
+          ?~  our-key.rs0  `this
           =/  our-key  (need our-key.rs0)
           =/  incoming-positions  (turn cards.action |=(p=partial-dec:poker idx.p))
           =/  our-pos
@@ -231,7 +232,7 @@
           :_  this
           ?:  =(role.state %alice)
             :~  [%give %fact ~[/game] %poker-room-update !>([%hand-dealt our.bowl decrypted])]
-                [%give %fact ~[/game] %poker-room-update !>([%your-turn %preflop ss pot.rs2 to-call min-raise.cfg])]
+                [%give %fact ~[/game] %poker-room-update !>([%your-turn %preflop ss pot.rs2 to-call min-raise.config.rs2 small-blind.config.rs2 big-blind.config.rs2])]
                 [%pass twire %arvo %b %rest (add now.bowl ~m1)]
             ==
           :~  [%give %fact ~[/game] %poker-room-update !>([%hand-dealt our.bowl decrypted])]
@@ -290,7 +291,7 @@
               =.  state  [%0 rs1 role.state]
               :_  this
               :~  [%give %fact ~[/game] %poker-room-update !>([%peer-acted act ss1 pot.rs1 0 peer-bet.rs1])]
-                  [%give %fact ~[/game] %poker-room-update !>([%your-turn str ss1 pot.rs1 0 min-raise.config.rs1])]
+                  [%give %fact ~[/game] %poker-room-update !>([%your-turn str ss1 pot.rs1 0 min-raise.config.rs1 small-blind.config.rs1 big-blind.config.rs1])]
               ==
             %call
               =/  to-call  (sub our-bet.rs0 peer-bet.rs0)
@@ -308,7 +309,7 @@
                 =.  state  [%0 rs2 role.state]
                 :_  this
                 :~  [%give %fact ~[/game] %poker-room-update !>([%peer-acted act ss1 pot.rs2 0 peer-bet.rs2])]
-                    [%give %fact ~[/game] %poker-room-update !>([%your-turn str ss1 pot.rs2 0 min-raise.config.rs2])]
+                    [%give %fact ~[/game] %poker-room-update !>([%your-turn str ss1 pot.rs2 0 min-raise.config.rs2 small-blind.config.rs2 big-blind.config.rs2])]
                 ==
               ?:  =(str %river)
                 =/  r  (need our-key.rs1)
@@ -332,7 +333,7 @@
               =.  state  [%0 rs2 role.state]
               :_  this
               :~  [%give %fact ~[/game] %poker-room-update !>([%peer-acted act ss1 pot.rs2 to-call peer-bet.rs2])]
-                  [%give %fact ~[/game] %poker-room-update !>([%your-turn str ss1 pot.rs2 to-call min-raise.config.rs2])]
+                  [%give %fact ~[/game] %poker-room-update !>([%your-turn str ss1 pot.rs2 to-call min-raise.config.rs2 small-blind.config.rs2 big-blind.config.rs2])]
               ==
           ==
         %mp-community
@@ -357,7 +358,7 @@
           ?:  =(role.state %bob)
             ::  we act first
             :~  [%give %fact ~[/game] %poker-room-update !>([%community-dealt next-str plaintext])]
-                [%give %fact ~[/game] %poker-room-update !>([%your-turn next-str ss pot.rs1 0 min-raise.config.rs1])]
+                [%give %fact ~[/game] %poker-room-update !>([%your-turn next-str ss pot.rs1 0 min-raise.config.rs1 small-blind.config.rs1 big-blind.config.rs1])]
             ==
           ::  peer acts first
           :~  [%give %fact ~[/game] %poker-room-update !>([%community-dealt next-str plaintext])]
@@ -434,7 +435,6 @@
           :_  this
           :~  [%pass /peer %agent [peer %poker-room] %poke %poker-deal-action !>([%street-action action])]
               [%give %fact ~[/game] %poker-room-update !>([%player-folded our.bowl])]
-              [%pass /peer %agent [peer %poker-room] %poke %poker-deal-action !>([%mp-reveal-key d:(need our-key.rs0) `@ux`0])]
           ==
         %check
           =/  ss1
@@ -536,7 +536,25 @@
   ?+  wire  (on-arvo:def wire sign)
     [%timeout *]  `this
   ==
-++  on-watch  |=(=path `this)
+++  on-watch
+  |=  =path
+  ^-  (quip card _this)
+  ?.  =([%game ~] path)  `this
+  =/  rs0  room-state.state
+  ?.  ?=([%live *] phase.rs0)  `this
+  =/  ph  phase.rs0
+  =/  our-actor  ?:(=(role.state %alice) %alice %bob)
+  =/  ss  street-status.ph
+  =/  to-call=@ud
+    ?:  (gth peer-bet.rs0 our-bet.rs0)
+      (sub peer-bet.rs0 our-bet.rs0)
+    0
+  :_  this
+  ?:  =(actor.ss our-actor)
+    :~  [%give %fact ~[/game] %poker-room-update !>([%hand-dealt our.bowl our-hand.rs0])]
+        [%give %fact ~[/game] %poker-room-update !>([%your-turn street.ph ss pot.rs0 to-call min-raise.config.rs0 small-blind.config.rs0 big-blind.config.rs0])]
+    ==
+  ~[[%give %fact ~[/game] %poker-room-update !>([%hand-dealt our.bowl our-hand.rs0])]]
 ++  on-leave  |=(=path `this)
 ++  on-peek   |=(=path ~)
 ++  on-fail   on-fail:def

@@ -1663,13 +1663,19 @@
     uid     = `lobby-${Date.now()}-${Math.floor(Math.random() * 0xFFFF).toString(16)}`;
     eventId = 1;
 
-    // Get our ship name from the session cookie path
-    try {
-      const res = await fetch('/session.js');
-      const txt = await res.text();
-      const m   = txt.match(/window\.ship\s*=\s*"([^"]+)"/);
-      if (m) ourShip = m[1];
-    } catch(e) {}
+    // Get our ship name from the auth cookie, fallback to /session.js
+    const cm = document.cookie.match(/urbauth-~([^=]+)=/);
+    if (cm) {
+      ourShip = cm[1];
+    } else {
+      try {
+        const res = await fetch('/session.js');
+        const txt = await res.text();
+        const sm = txt.match(/window\.ship\s*=\s*"([^"]+)"/);
+        if (sm) ourShip = sm[1];
+      } catch(e) {}
+    }
+    console.log('ourShip:', ourShip);
 
     // PUT the channel open
     await eyrePut([]);
@@ -1837,9 +1843,9 @@
   async function loadStats() {
     try {
       const [games, ships, present] = await Promise.all([
-        fetch('/~/scry/poker-lobby/games.json').then(r => r.json()),
-        fetch('/~/scry/poker-lobby/ships.json').then(r => r.json()),
-        fetch('/~/scry/poker-lobby/online.json').then(r => r.json())
+        fetch(`/~/scry/${LOBBY_HOST}/poker-lobby/games.json`).then(r => r.json()),
+        fetch(`/~/scry/${LOBBY_HOST}/poker-lobby/ships.json`).then(r => r.json()),
+        fetch(`/~/scry/${LOBBY_HOST}/poker-lobby/online.json`).then(r => r.json())
       ]);
       const vals = document.querySelectorAll('.stat-value');
       if (vals[0]) vals[0].textContent = Number(games['poker-lobby-count']).toLocaleString();
@@ -1849,7 +1855,7 @@
   }
 
   function updatePresentNow() {
-    fetch('/~/scry/poker-lobby/online.json')
+    fetch(`/~/scry/${LOBBY_HOST}/poker-lobby/online.json`)
       .then(r => r.json())
       .then(d => {
         const vals = document.querySelectorAll('.stat-value');
@@ -1863,7 +1869,7 @@
 
   async function loadMaxHands() {
     try {
-      const res = await fetch('/~/scry/poker-lobby/max-hands.json');
+      const res = await fetch(`/~/scry/${LOBBY_HOST}/poker-lobby/max-hands.json`);
       const d   = await res.json();
       maxHandsOnNetwork = Math.max(1, d['poker-lobby-count'] || 1);
     } catch(e) {}

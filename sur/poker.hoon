@@ -262,6 +262,8 @@
           pot=@ud
           to-call=@ud
           min-raise=@ud
+          small-blind=@ud
+          big-blind=@ud
       ==
       $:  %peer-acted
           =action

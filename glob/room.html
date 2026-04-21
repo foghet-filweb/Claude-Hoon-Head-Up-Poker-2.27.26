@@ -961,8 +961,8 @@
     <div class="street-info">
       <span class="current-street">Turn</span>
       <span>·</span>
-      <span>~wicdev-wisryt bet 180</span>
-      <div class="blind-info">Blinds 10 / 20</div>
+      <span id="streetActionInfo"></span>
+      <div class="blind-info" id="blindInfo">Blinds 10 / 20</div>
     </div>
     <div class="betting-row">
       <button class="bet-action-btn btn-fold" onclick="sendFold()">Fold</button>
@@ -1080,7 +1080,8 @@
   let gameState = {
     street: 'pre-flop', pot: 0, myStack: 0, peerStack: 0,
     myBet: 0, peerBet: 0, toCall: 0, minRaise: 0,
-    myTurn: false, handNum: 0, community: [], myCards: []
+    myTurn: false, handNum: 0, community: [], myCards: [],
+    smallBlind: 0, bigBlind: 0
   };
 
   // ── Eyre helpers ───────────────────────────────────────────────
@@ -1110,12 +1111,18 @@
   }
 
   async function openChannel() {
-    try {
-      const res = await fetch('/session.js');
-      const txt = await res.text();
-      const m   = txt.match(/window\.ship\s*=\s*"([^"]+)"/);
-      if (m) ourShip = m[1];
-    } catch(e) {}
+    const cm = document.cookie.match(/urbauth-~([^=]+)=/);
+    if (cm) {
+      ourShip = cm[1];
+    } else {
+      try {
+        const res = await fetch('/session.js');
+        const txt = await res.text();
+        const sm = txt.match(/window\.ship\s*=\s*"([^"]+)"/);
+        if (sm) ourShip = sm[1];
+      } catch(e) {}
+    }
+    console.log('ourShip:', ourShip);
 
     updateHeader();
     await eyrePut([]);
@@ -1149,7 +1156,7 @@
 
     switch (tag) {
       case 'hand-dealt':
-        gameState.myCards = val.cards;
+        gameState.myCards = (val && val.cards && Array.isArray(val.cards)) ? val.cards : (Array.isArray(val) ? val : []);
         gameState.handNum++;
         renderMyCards();
         document.querySelector('.room-hand-num').textContent = '#' + gameState.handNum;
@@ -1173,11 +1180,14 @@
 
       case 'your-turn':
         gameState.myTurn   = true;
-        gameState.street   = val.street   || gameState.street;
-        gameState.pot      = val.pot      || gameState.pot;
-        gameState.toCall   = val['to-call']   || 0;
-        gameState.minRaise = val['min-raise'] || 0;
+        gameState.street   = (typeof val === 'string' ? val : val.street) || gameState.street;
+        gameState.pot      = (typeof val === 'object' ? val.pot : null)      || gameState.pot;
+        gameState.toCall   = (typeof val === 'object' ? val['to-call'] : null) || 0;
+        gameState.minRaise = (typeof val === 'object' ? val['min-raise'] : null) || 0;
+        gameState.smallBlind = (typeof val === 'object' ? val['small-blind'] : null) || gameState.smallBlind;
+        gameState.bigBlind   = (typeof val === 'object' ? val['big-blind']   : null) || gameState.bigBlind;
         renderPot(); updateCallBtn(); updateStreetLabel();
+        updateStreetInfo('you', null);
         setControlsEnabled(true);
         appendRoomSystem('Your action');
         break;
@@ -1189,6 +1199,7 @@
         gameState.peerBet = val['betting-state']['peer-bet'] || 0;
         setControlsEnabled(false);
         renderPot(); renderBets(); updateCallBtn();
+        updateStreetInfo('peer', val.action);
         appendRoomSystem(formatPeerAction(val.action));
         break;
 
@@ -1227,21 +1238,18 @@
 
   // ── Game action pokes ──────────────────────────────────────────
   function sendFold() {
-    if (!gameState.myTurn) return;
     eyrePoke('poker-room', 'poker-game-action', { 'poker-game-action': { fold: null } })
       .then(() => setControlsEnabled(false))
       .catch(() => appendRoomSystem('action failed — check connection'));
   }
 
   function sendCall() {
-    if (!gameState.myTurn) return;
     eyrePoke('poker-room', 'poker-game-action', { 'poker-game-action': { call: null } })
       .then(() => setControlsEnabled(false))
       .catch(() => appendRoomSystem('action failed — check connection'));
   }
 
   function sendRaise() {
-    if (!gameState.myTurn) return;
     const amount = parseInt(document.getElementById('raiseInput').value) || 0;
     if (amount < gameState.minRaise) {
       const ri = document.getElementById('raiseInput');
@@ -1386,6 +1394,23 @@
     if (si) si.textContent = cap(gameState.street);
   }
 
+  function updateStreetInfo(actor, action) {
+    const el = document.getElementById('streetActionInfo');
+    if (!el) return;
+    if (!action) {
+      el.textContent = actor === 'you' ? 'Your action' : '';
+      return;
+    }
+    const tag = Object.keys(action)[0];
+    const ship = actor === 'you' ? ('~' + ourShip) : ('~' + peerShip);
+    const map = { fold: 'folded', check: 'checked', call: 'called', 'all-in': 'is all-in' };
+    if (tag === 'raise') {
+      el.textContent = `${ship} raised to ${action.raise.amount}`;
+    } else {
+      el.textContent = `${ship} ${map[tag] || tag}`;
+    }
+  }
+
   function updateHeader() {
     if (!ourShip) return;
     const vs = document.querySelector('.room-vs');
@@ -1393,6 +1418,12 @@
       `<span class="ship-name">~${ourShip}</span>
        <span style="color:var(--text-muted);margin:0 6px;">vs</span>
        <span class="ship-name">~${peerShip}</span>`;
+    const myZone = document.querySelector('.my-zone .player-ship');
+    const oppZone = document.querySelector('.opponent-zone .player-ship');
+    if (myZone) myZone.textContent = '~' + ourShip + ' (you)';
+    if (oppZone) oppZone.textContent = '~' + (peerShip || 'opponent');
+    const bi = document.getElementById('blindInfo');
+    if (bi && gameState.smallBlind) bi.textContent = `Blinds ${gameState.smallBlind} / ${gameState.bigBlind}`;
   }
 
   function formatPeerAction(action) {

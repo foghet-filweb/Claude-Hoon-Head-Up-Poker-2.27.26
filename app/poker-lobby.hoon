@@ -209,6 +209,7 @@
   |=  =path
   ^-  (quip card _this)
   ~&  [%on-leave path src.bowl]
+  ?.  =([%chat ~] path)  `this
   =.  subscribers.state   (~(del in subscribers.state) src.bowl)
   =.  unique-ships.state  (~(del in unique-ships.state) src.bowl)
   [~ this]
