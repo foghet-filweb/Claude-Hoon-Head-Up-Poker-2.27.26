@@ -1461,8 +1461,8 @@
     <div class="ship-body">
       <input class="ship-input" type="text" placeholder="~planet-name" id="shipInput" maxlength="28">
       <div class="ship-btn-row">
-        <button class="rep-lookup-btn" onclick="showRepResult()">Look-Up</button>
-        <button class="challenge-btn" id="challengeBtn" onclick="sendChallenge()">Challenge</button>
+        <button class="rep-lookup-btn" id="repLookupBtn">Look-Up</button>
+        <button class="challenge-btn" id="challengeBtn">Challenge</button>
       </div>
       <div class="rep-result" id="repResult">
         <div class="rep-details">
@@ -1539,22 +1539,22 @@
     <div class="stat-divider"></div>
     <!-- Post-room complaint button — visible for 60s after returning from a room -->
     <div class="complaint-return-area" id="complaintReturnArea" style="display:none;">
-      <button class="complaint-return-btn" id="complaintReturnBtn" onclick="showLobbyComplaint()">
+      <button class="complaint-return-btn" id="complaintReturnBtn">
         <span id="complaintReturnLabel">File Complaint</span>
         <span class="complaint-countdown" id="complaintCountdown">1:00</span>
       </button>
     </div>
     <div class="left-stats">
       <div class="stat-item">
-        <div class="stat-value">4,821</div>
+        <div class="stat-value">—</div>
         <div class="stat-label">Hands Played</div>
       </div>
       <div class="stat-item">
-        <div class="stat-value">318</div>
+        <div class="stat-value">—</div>
         <div class="stat-label">Unique Ships</div>
       </div>
       <div class="stat-item">
-        <div class="stat-value">12</div>
+        <div class="stat-value">—</div>
         <div class="stat-label">Present Now</div>
       </div>
     </div>
@@ -1573,14 +1573,14 @@
       <div class="chat-input-row">
         <textarea class="chat-input" rows="2" placeholder="Say something…" id="chatInput" maxlength="280"></textarea>
         <div class="chat-send-col">
-          <button class="chat-send-btn" onclick="sendChat()" title="send">↑</button>
+          <button class="chat-send-btn" id="chatSendBtn" title="send">↑</button>
           <span class="char-counter" id="charCounter">280 char.</span>
         </div>
       </div>
       <div class="chat-meta-row">
         <div class="chat-meta-btns">
-          <button class="chat-about-btn" onclick="showHowTo()">About</button>
-          <button class="chat-about-btn" onclick="showRewardsOverlay()">Fhloston Rewards</button>
+          <button class="chat-about-btn" id="howToBtn">About</button>
+          <button class="chat-about-btn" id="rewardsBtn">Fhloston Rewards</button>
         </div>
       </div>
     </div>
@@ -1626,10 +1626,10 @@
     <div class="overlay-timer" id="overlayTimer">1:00</div>
     <div class="overlay-decline-area" id="declineArea"></div>
     <div class="overlay-buttons" id="overlayButtons">
-      <button class="overlay-btn overlay-btn-decline" onclick="initiateDecline()">Decline</button>
-      <button class="overlay-btn overlay-btn-accept" onclick="acceptChallenge()">Accept</button>
+      <button class="overlay-btn overlay-btn-decline" id="declineBtn">Decline</button>
+      <button class="overlay-btn overlay-btn-accept" id="acceptBtn">Accept</button>
     </div>
-    <button class="overlay-btn-confirm-decline" id="confirmDeclineBtn" onclick="confirmDecline()">Send decline</button>
+    <button class="overlay-btn-confirm-decline" id="confirmDeclineBtn">Send decline</button>
   </div>
 </div>
 
@@ -1663,17 +1663,12 @@
     uid     = `lobby-${Date.now()}-${Math.floor(Math.random() * 0xFFFF).toString(16)}`;
     eventId = 1;
 
-    // Get our ship name from the auth cookie, fallback to /session.js
+    // Get our ship name from the auth cookie only
     const cm = document.cookie.match(/urbauth-~([^=]+)=/);
     if (cm) {
       ourShip = cm[1];
     } else {
-      try {
-        const res = await fetch('/session.js');
-        const txt = await res.text();
-        const sm = txt.match(/window\.ship\s*=\s*"([^"]+)"/);
-        if (sm) ourShip = sm[1];
-      } catch(e) {}
+      console.error('ourShip: cookie not found, ship will be null');
     }
     console.log('ourShip:', ourShip);
 
@@ -2322,6 +2317,19 @@
     document.getElementById('chatLog').scrollTop = 99999;
     checkReturnFromRoom();
     openChannel();
+    document.getElementById('repLookupBtn').addEventListener('click', showRepResult);
+    document.getElementById('challengeBtn').addEventListener('click', sendChallenge);
+    document.getElementById('complaintReturnBtn').addEventListener('click', showLobbyComplaint);
+    document.getElementById('chatSendBtn').addEventListener('click', sendChat);
+    document.getElementById('howToBtn').addEventListener('click', showHowTo);
+    document.getElementById('rewardsBtn').addEventListener('click', showRewardsOverlay);
+    document.getElementById('declineBtn').addEventListener('click', initiateDecline);
+    document.getElementById('acceptBtn').addEventListener('click', acceptChallenge);
+    document.getElementById('confirmDeclineBtn').addEventListener('click', confirmDecline);
+    document.getElementById('howtoCloseBtn').addEventListener('click', closeHowTo);
+    document.getElementById('rewardsCloseBtn').addEventListener('click', closeRewardsOverlay);
+    document.getElementById('cancelComplaintBtn').addEventListener('click', closeLobbyComplaint);
+    document.getElementById('fileComplaintLobbyBtn').addEventListener('click', fileLobbyComplaint);
   });
 
   // Dev key: D triggers fake incoming challenge for overlay testing
@@ -2337,7 +2345,7 @@
 
     <div class="howto-header">
       <div class="howto-title">Head-Up Poker — How to Play</div>
-      <button class="howto-close" onclick="closeHowTo()">Close</button>
+      <button class="howto-close" id="howtoCloseBtn">Close</button>
     </div>
 
     <div class="howto-body">
@@ -2393,7 +2401,7 @@
   <div class="rewards-card">
     <div class="rewards-title">Fhloston Rewards</div>
     <div class="rewards-msg">You have no rewards.</div>
-    <button class="rewards-close" onclick="closeRewardsOverlay()">Close</button>
+    <button class="rewards-close" id="rewardsCloseBtn">Close</button>
   </div>
 </div>
 
@@ -2437,8 +2445,8 @@
       </div>
     </div>
     <div class="broken-footer">
-      <button class="broken-btn btn-no-complaint" onclick="closeLobbyComplaint()">Cancel</button>
-      <button class="broken-btn btn-file-complaint" onclick="fileLobbyComplaint()">File Complaint</button>
+      <button class="broken-btn btn-no-complaint" id="cancelComplaintBtn">Cancel</button>
+      <button class="broken-btn btn-file-complaint" id="fileComplaintLobbyBtn">File Complaint</button>
     </div>
   </div>
 </div>

@@ -283,6 +283,7 @@
       [%hand-complete alice-result=* bob-result=* outcome=*]
       [%game-audited audit=audit-record]
       [%player-folded ship=@p]
+      [%fold-complete winner=@p our-stack=@ud peer-stack=@ud]
       [%key-revealed peer=@p]
       [%timeout-forfeit winner=@p]
       [%session-over reason=?(%hands-limit %cap-limit) hands-played=@ud total-wagered=@ud]

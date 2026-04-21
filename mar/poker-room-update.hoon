@@ -25,10 +25,11 @@
         %showdown  'showdown'
       ==
     =/  card-json
-      |=  idx=@ud
+      |=  raw-idx=@ud
       ^-  ^json
       =/  rank-names  `(list cord)`~['2' '3' '4' '5' '6' '7' '8' '9' 'T' 'J' 'Q' 'K' 'A']
       =/  suit-names  `(list cord)`~['s' 'h' 'd' 'c']
+      =/  idx  (mod raw-idx 52)
       =/  r=@ud  (div idx 4)
       =/  s=@ud  (mod idx 4)
       =/  rn=cord  (snag r rank-names)
@@ -38,6 +39,9 @@
       |=  cards=(list @ud)
       ^-  ^json
       [%a (turn cards card-json)]
+    =/  ud-json
+      |=  n=@ud  ^-  ^json
+      [%n (crip (skim (trip (scot %ud n)) |=(c=@t !=(c '.'))))]
     =/  action-json
       |=  a=action:poker
       ^-  ^json
@@ -51,7 +55,7 @@
         %raise
           %+  mk  %raise
           %+  mk  %amount
-          [%n (scot %ud amount.a)]
+          (ud-json amount.a)
       ==
     ?-  -.u
       %hand-dealt
@@ -62,21 +66,21 @@
       %your-turn
         %+  mk  %poker-room-update
         %+  mk  %your-turn
-        [%o (~(gas by *(map @t ^json)) ~[['street' `^json`[%s (street-name street.u)]] ['pot' `^json`[%n (scot %ud pot.u)]] ['to-call' `^json`[%n (scot %ud to-call.u)]] ['min-raise' `^json`[%n (scot %ud min-raise.u)]] ['small-blind' `^json`[%n (scot %ud small-blind.u)]] ['big-blind' `^json`[%n (scot %ud big-blind.u)]]])]
+        [%o (~(gas by *(map @t ^json)) ~[['street' `^json`[%s (street-name street.u)]] ['pot' (ud-json pot.u)] ['to-call' (ud-json to-call.u)] ['min-raise' (ud-json min-raise.u)] ['small-blind' (ud-json small-blind.u)] ['big-blind' (ud-json big-blind.u)]])]
       %peer-acted
         =/  bs=^json
-          [%o (~(gas by *(map @t ^json)) ~[['pot' `^json`[%n (scot %ud pot.u)]] ['to-call' `^json`[%n (scot %ud to-call.u)]] ['peer-bet' `^json`[%n (scot %ud peer-bet.u)]]])]
+          [%o (~(gas by *(map @t ^json)) ~[['pot' (ud-json pot.u)] ['to-call' (ud-json to-call.u)] ['peer-bet' (ud-json peer-bet.u)]])]
         %+  mk  %poker-room-update
         %+  mk  %peer-acted
         [%o (~(gas by *(map @t ^json)) ~[['betting-state' bs] ['action' (action-json action.u)]])]
       %community-dealt
         %+  mk  %poker-room-update
         %+  mk  %community-dealt
-        [%s (street-name street.u)]
+        [%o (~(gas by *(map @t ^json)) ~[['street' `^json`[%s (street-name street.u)]] ['cards' (card-list cards.u)]])]
       %street-started
         %+  mk  %poker-room-update
         %+  mk  %street-started
-        [%s (street-name street.u)]
+        [%o (~(gas by *(map @t ^json)) ~[['street' `^json`[%s (street-name street.u)]] ['pot' (ud-json pot.u)] ['to-call' (ud-json to-call.u)] ['min-raise' (ud-json min-raise.u)]])]
       %player-folded
         %+  mk  %poker-room-update
         %+  mk  %player-folded
@@ -97,6 +101,10 @@
         %+  mk  %poker-room-update
         %+  mk  %timeout-forfeit
         [%s (scot %p winner.u)]
+      %fold-complete
+        %+  mk  %poker-room-update
+        %+  mk  %fold-complete
+        [%o (~(gas by *(map @t ^json)) ~[['winner' `^json`[%s (scot %p winner.u)]] ['our-stack' (ud-json our-stack.u)] ['peer-stack' (ud-json peer-stack.u)]])]
       %key-revealed
         %+  mk  %poker-room-update
         %+  mk  %key-revealed

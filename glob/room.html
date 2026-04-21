@@ -860,16 +860,16 @@
   <div class="room-header-left">
     <div class="room-title">Head-Up Poker</div>
     <div class="room-vs">
-      <span class="ship-name">~sampel-palnet</span>
+      <span class="ship-name">...</span>
       <span style="color:var(--text-muted);margin:0 6px;">vs</span>
-      <span class="ship-name">~wicdev-wisryt</span>
+      <span class="ship-name">...</span>
     </div>
   </div>
   <div class="room-header-center">
     <div class="room-hand-label">Hand</div>
     <div class="room-hand-num">#7</div>
   </div>
-  <button class="back-btn" onclick="leaveRoom()">← Leave Room</button>
+  <button class="back-btn" id="leaveRoomBtn">← Leave Room</button>
 </div>
 
 <!-- ══ ROOM BODY ══════════════════════════════════════════════════ -->
@@ -881,7 +881,7 @@
   <!-- Opponent zone -->
   <div class="opponent-zone">
     <div class="player-info">
-      <div class="player-ship">~wicdev-wisryt</div>
+      <div class="player-ship">...</div>
       <div class="player-stack">4,820</div>
       <div class="player-stack-label">Chips</div>
     </div>
@@ -950,7 +950,7 @@
       <div class="player-bet-label">Bet</div>
     </div>
     <div class="player-info" style="margin-left:8px;">
-      <div class="player-ship" style="color:var(--gold-dim);">~sampel-palnet (you)</div>
+      <div class="player-ship" style="color:var(--gold-dim);">... (you)</div>
       <div class="player-stack">4,820</div>
       <div class="player-stack-label">Chips</div>
     </div>
@@ -965,16 +965,16 @@
       <div class="blind-info" id="blindInfo">Blinds 10 / 20</div>
     </div>
     <div class="betting-row">
-      <button class="bet-action-btn btn-fold" onclick="sendFold()">Fold</button>
-      <button class="bet-action-btn btn-call" onclick="sendCall()">Call 180</button>
-      <button class="bet-action-btn btn-raise" onclick="sendRaise()">Raise</button>
+      <button class="bet-action-btn btn-fold" id="foldBtn">Fold</button>
+      <button class="bet-action-btn btn-call" id="callBtn">Call 180</button>
+      <button class="bet-action-btn btn-raise" id="raiseBtn">Raise</button>
     </div>
     <div class="raise-row">
       <span class="raise-label">Raise to</span>
       <input class="raise-input" type="number" id="raiseInput" value="360" min="360" max="9999999">
-      <button class="raise-shortcut" onclick="setPot()">Pot</button>
-      <button class="raise-shortcut" onclick="setHalf()">½ Pot</button>
-      <button class="raise-shortcut" onclick="setAllIn()">All-In</button>
+      <button class="raise-shortcut" id="setPotBtn">Pot</button>
+      <button class="raise-shortcut" id="setHalfBtn">½ Pot</button>
+      <button class="raise-shortcut" id="setAllInBtn">All-In</button>
     </div>
   </div>
 
@@ -991,7 +991,7 @@
   <div class="room-chat-input-area">
     <div class="room-chat-input-row">
       <textarea class="room-chat-input" rows="2" placeholder="Say something…" id="roomChatInput" maxlength="280"></textarea>
-      <button class="room-chat-send" onclick="sendRoomChat()">↑</button>
+      <button class="room-chat-send" id="roomChatSendBtn">↑</button>
     </div>
     <div class="room-char-counter" id="roomCharCounter">280</div>
   </div>
@@ -1007,8 +1007,8 @@
       <div class="broken-by">Leaving now forfeits the current hand to your opponent.</div>
     </div>
     <div class="broken-footer">
-      <button class="broken-btn btn-no-complaint" onclick="cancelLeave()">Stay</button>
-      <button class="broken-btn btn-file-complaint" style="border-color:#c0392b;color:#c0392b;background:rgba(192,57,43,0.08);" onclick="confirmLeave()">Leave &amp; Forfeit</button>
+      <button class="broken-btn btn-no-complaint" id="cancelLeaveBtn">Stay</button>
+      <button class="broken-btn btn-file-complaint" id="confirmLeaveBtn" style="border-color:#c0392b;color:#c0392b;background:rgba(192,57,43,0.08);">Leave &amp; Forfeit</button>
     </div>
   </div>
 </div>
@@ -1020,7 +1020,7 @@
     <div class="broken-header">
       <div class="broken-title">Hand Broken</div>
       <div class="broken-by">
-        <span class="ship-name" id="breakerShip">~sampel-palnet</span>
+        <span class="ship-name" id="breakerShip">...</span>
         left the room — hand discarded
       </div>
     </div>
@@ -1057,8 +1057,8 @@
     </div>
 
     <div class="broken-footer">
-      <button class="broken-btn btn-no-complaint" onclick="returnToLobby(true)">No Complaint</button>
-      <button class="broken-btn btn-file-complaint" onclick="fileComplaint()">File & Return</button>
+      <button class="broken-btn btn-no-complaint" id="noComplaintBtn">No Complaint</button>
+      <button class="broken-btn btn-file-complaint" id="fileComplaintBtn">File & Return</button>
     </div>
 
   </div>
@@ -1092,6 +1092,7 @@
   }
 
   async function eyrePut(events) {
+    console.log('eyrePut sending:', JSON.stringify(events));
     await fetch(`/~/channel/${uid}`, {
       method: 'PUT',
       headers: {
@@ -1115,12 +1116,7 @@
     if (cm) {
       ourShip = cm[1];
     } else {
-      try {
-        const res = await fetch('/session.js');
-        const txt = await res.text();
-        const sm = txt.match(/window\.ship\s*=\s*"([^"]+)"/);
-        if (sm) ourShip = sm[1];
-      } catch(e) {}
+      console.error('ourShip: cookie not found, ship will be null');
     }
     console.log('ourShip:', ourShip);
 
@@ -1133,6 +1129,12 @@
       ship: ourShip || '', app: 'poker-room', path: '/game'
     }]);
 
+    // Subscribe to /chat on poker-lobby for room chat
+    await eyrePut([{
+      id: eventId++, action: 'subscribe',
+      ship: ourShip || '', app: 'poker-lobby', path: '/chat'
+    }]);
+
     openSSE();
   }
 
@@ -1141,7 +1143,10 @@
     es.onmessage = async (e) => {
       const data = JSON.parse(e.data);
       await eyreAck(data.id);
-      if (data.response === 'diff' && data.json) handleRoomUpdate(data.json);
+      if (data.response === 'diff' && data.json) {
+        if (data.json['poker-room-update']) handleRoomUpdate(data.json);
+        else if (data.json['poker-chat-update']) handleRoomChatUpdate(data.json['poker-chat-update']);
+      }
       if (data.response === 'quit') handlePeerLeft();
     };
     es.onerror = () => { es.close(); handlePeerLeft(); };
@@ -1171,10 +1176,10 @@
         break;
 
       case 'street-started':
-        gameState.street   = val.street;
-        gameState.pot      = val['betting-state'].pot || 0;
-        gameState.toCall   = val['betting-state']['to-call']  || 0;
-        gameState.minRaise = val['betting-state']['min-raise'] || 0;
+        gameState.street   = val.street || gameState.street;
+        gameState.pot      = Number(val.pot)          || gameState.pot;
+        gameState.toCall   = Number(val['to-call'])   || 0;
+        gameState.minRaise = Number(val['min-raise']) || 0;
         renderPot(); updateCallBtn(); updateStreetLabel();
         break;
 
@@ -1210,6 +1215,16 @@
         setControlsEnabled(false);
         break;
 
+      case 'fold-complete': {
+        const winner = val.winner;
+        const isWinner = (winner === ('~' + ourShip) || winner === ourShip);
+        gameState.myStack   = isWinner ? Number(val['our-stack'])   : Number(val['peer-stack']);
+        gameState.peerStack = isWinner ? Number(val['peer-stack'])  : Number(val['our-stack']);
+        renderBets();
+        appendRoomSystem(isWinner ? 'You win the pot.' : 'Opponent wins the pot.');
+        break;
+      }
+
       case 'hand-complete':
         handleHandComplete(val);
         break;
@@ -1238,12 +1253,15 @@
 
   // ── Game action pokes ──────────────────────────────────────────
   function sendFold() {
+    console.log('sendFold called, ourShip:', ourShip);
+    gameState.myTurn = false;
     eyrePoke('poker-room', 'poker-game-action', { 'poker-game-action': { fold: null } })
       .then(() => setControlsEnabled(false))
       .catch(() => appendRoomSystem('action failed — check connection'));
   }
 
   function sendCall() {
+    gameState.myTurn = false;
     eyrePoke('poker-room', 'poker-game-action', { 'poker-game-action': { call: null } })
       .then(() => setControlsEnabled(false))
       .catch(() => appendRoomSystem('action failed — check connection'));
@@ -1257,6 +1275,7 @@
       setTimeout(() => ri.classList.remove('snapped'), 800);
       return;
     }
+    gameState.myTurn = false;
     eyrePoke('poker-room', 'poker-game-action', { 'poker-game-action': { raise: { amount } } })
       .then(() => setControlsEnabled(false))
       .catch(() => appendRoomSystem('action failed — check connection'));
@@ -1489,7 +1508,7 @@
     const text = roomInput.value.trim();
     if (!text) return;
     eyrePoke('poker-lobby', 'poker-chat-action', {
-      'poker-chat-action': { 'room-message': { 'room-id': roomId, text } }
+      'poker-chat-action': { send: text }
     }).catch(() => {});
     appendRoomChat('~' + (ourShip || 'you'), text, true);
     roomInput.value = '';
@@ -1522,11 +1541,33 @@
     log.scrollTop = log.scrollHeight;
   }
 
+  function handleRoomChatUpdate(update) {
+    const tag = Object.keys(update)[0];
+    if (tag !== 'message') return;
+    const msg = update[tag];
+    const ship = msg.ship || '';
+    const text = msg.text || '';
+    const isMe = ship === ('~' + ourShip) || ship === ourShip;
+    appendRoomChat(ship, text, isMe);
+  }
+
   // ── Init ───────────────────────────────────────────────────────
   window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('roomChatLog').scrollTop = 99999;
     setControlsEnabled(false);
     openChannel();
+    document.getElementById('leaveRoomBtn').addEventListener('click', leaveRoom);
+    document.getElementById('foldBtn').addEventListener('click', sendFold);
+    document.getElementById('callBtn').addEventListener('click', sendCall);
+    document.getElementById('raiseBtn').addEventListener('click', sendRaise);
+    document.getElementById('setPotBtn').addEventListener('click', setPot);
+    document.getElementById('setHalfBtn').addEventListener('click', setHalf);
+    document.getElementById('setAllInBtn').addEventListener('click', setAllIn);
+    document.getElementById('roomChatSendBtn').addEventListener('click', sendRoomChat);
+    document.getElementById('cancelLeaveBtn').addEventListener('click', cancelLeave);
+    document.getElementById('confirmLeaveBtn').addEventListener('click', confirmLeave);
+    document.getElementById('noComplaintBtn').addEventListener('click', () => returnToLobby(true));
+    document.getElementById('fileComplaintBtn').addEventListener('click', fileComplaint);
   });
 
   // Dev keys

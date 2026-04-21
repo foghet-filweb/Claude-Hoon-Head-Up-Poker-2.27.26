@@ -258,8 +258,16 @@
                   total-wagered  (add total-wagered.rs0 pot.rs0)
                 ==
               =.  state  [%0 rs1 role.state]
+              =/  keep-playing=?
+                ?|  ?=(~ hands.config.rs1)
+                    (lth hands-played.rs1 (need hands.config.rs1))
+                ==
               :_  this
               :~  [%give %fact ~[/game] %poker-room-update !>([%player-folded peer])]
+                  [%give %fact ~[/game] %poker-room-update !>([%fold-complete our.bowl our-stack.rs1 peer-stack.rs1])]
+                  ?.  keep-playing
+                    [%give %fact ~[/game] %poker-room-update !>([%session-over %hands-limit hands-played.rs1 total-wagered.rs1])]
+                  [%pass /next-hand %agent [our.bowl %poker-room] %poke %poker-room-init !>([room-id.rs1 peer.rs1 config.rs1 dealer.rs1])]
               ==
             %check
               =/  ss1
@@ -301,10 +309,11 @@
               =/  bb-option=?
                 ?&  =(%preflop str)
                     =(our-bet.rs1 peer-bet.rs1)
+                    =(%.n alice-acted.ss)
                 ==
               ?:  bb-option
                 ~>  %slog.[0 leaf+"bb-option fired, our-actor={<our-actor>}"]
-                =/  ss1  ss(actor our-actor)
+                =/  ss1  ss(actor our-actor, alice-acted %.y)
                 =/  rs2  rs1(phase [%live str ss1])
                 =.  state  [%0 rs2 role.state]
                 :_  this
@@ -432,9 +441,17 @@
               total-wagered  (add total-wagered.rs0 pot.rs0)
             ==
           =.  state  [%0 rs1 role.state]
+          =/  keep-playing=?
+            ?|  ?=(~ hands.config.rs1)
+                (lth hands-played.rs1 (need hands.config.rs1))
+            ==
           :_  this
           :~  [%pass /peer %agent [peer %poker-room] %poke %poker-deal-action !>([%street-action action])]
               [%give %fact ~[/game] %poker-room-update !>([%player-folded our.bowl])]
+              [%give %fact ~[/game] %poker-room-update !>([%fold-complete peer our-stack.rs1 peer-stack.rs1])]
+              ?.  keep-playing
+                [%give %fact ~[/game] %poker-room-update !>([%session-over %hands-limit hands-played.rs1 total-wagered.rs1])]
+              [%pass /next-hand %agent [our.bowl %poker-room] %poke %poker-room-init !>([room-id.rs1 peer.rs1 config.rs1 dealer.rs1])]
           ==
         %check
           =/  ss1
@@ -482,9 +499,12 @@
           =/  bb-option=?
             ?&  =(%preflop street.ph)
                 =(our-bet.rs1 peer-bet.rs1)
+                =(%.n alice-acted.street-status.ph)
             ==
           ?:  bb-option
-            =.  state  [%0 rs1 role.state]
+            =/  ss-bb  street-status.ph(alice-acted %.y, actor peer-actor)
+            =/  rs2  rs1(phase [%live street.ph ss-bb])
+            =.  state  [%0 rs2 role.state]
             :_  this
             :~  [%pass /peer %agent [peer %poker-room] %poke %poker-deal-action !>([%street-action action])]
                 [%give %fact ~[/game] %poker-room-update !>([%player-called our.bowl to-call])]
@@ -550,11 +570,11 @@
       (sub peer-bet.rs0 our-bet.rs0)
     0
   :_  this
-  ?:  =(actor.ss our-actor)
-    :~  [%give %fact ~[/game] %poker-room-update !>([%hand-dealt our.bowl our-hand.rs0])]
-        [%give %fact ~[/game] %poker-room-update !>([%your-turn street.ph ss pot.rs0 to-call min-raise.config.rs0 small-blind.config.rs0 big-blind.config.rs0])]
-    ==
-  ~[[%give %fact ~[/game] %poker-room-update !>([%hand-dealt our.bowl our-hand.rs0])]]
+  =/  facts=(list card)
+    ~[[%give %fact ~[/game] %poker-room-update !>([%hand-dealt our.bowl our-hand.rs0])]]
+  ?.  =(actor.ss our-actor)  facts
+  :_  facts
+  [%give %fact ~[/game] %poker-room-update !>([%your-turn street.ph ss pot.rs0 to-call min-raise.config.rs0 small-blind.config.rs0 big-blind.config.rs0])]
 ++  on-leave  |=(=path `this)
 ++  on-peek   |=(=path ~)
 ++  on-fail   on-fail:def
