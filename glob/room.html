@@ -1169,8 +1169,8 @@
         break;
 
       case 'community-dealt':
-        gameState.street    = val.street;
-        gameState.community = val.cards;
+        gameState.street = val.street || gameState.street;
+        gameState.community = (gameState.community || []).concat(val.cards || []);
         renderCommunityCards();
         updateStreetLabel();
         break;
