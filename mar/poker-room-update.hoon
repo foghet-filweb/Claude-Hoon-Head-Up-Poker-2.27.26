@@ -29,7 +29,7 @@
       ^-  ^json
       =/  rank-names  `(list cord)`~['2' '3' '4' '5' '6' '7' '8' '9' 'T' 'J' 'Q' 'K' 'A']
       =/  suit-names  `(list cord)`~['s' 'h' 'd' 'c']
-      =/  idx  (mod raw-idx 52)
+      =/  idx  (mod (add raw-idx (div raw-idx 52)) 52)
       =/  r=@ud  (div idx 4)
       =/  s=@ud  (mod idx 4)
       =/  rn=cord  (snag r rank-names)

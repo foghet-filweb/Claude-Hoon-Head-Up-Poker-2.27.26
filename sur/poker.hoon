@@ -242,6 +242,7 @@
           =street
           cards=(list partial-dec)
       ==
+      [%mp-community-reveal =street cards=(list @ud)]
       ::  Betting action forwarded peer-to-peer
       $:  %street-action
           =action

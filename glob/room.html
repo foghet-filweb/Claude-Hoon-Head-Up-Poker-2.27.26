@@ -1142,6 +1142,7 @@
     const es = new EventSource(`/~/channel/${uid}`);
     es.onmessage = async (e) => {
       const data = JSON.parse(e.data);
+      console.log('SSE raw:', data.response, data.id, data.json ? Object.keys(data.json) : 'no json');
       await eyreAck(data.id);
       if (data.response === 'diff' && data.json) {
         if (data.json['poker-room-update']) handleRoomUpdate(data.json);
@@ -1154,6 +1155,7 @@
 
   // ── Room update handler ────────────────────────────────────────
   function handleRoomUpdate(json) {
+    console.log('SSE update received:', JSON.stringify(json).substring(0, 100));
     const update = json['poker-room-update'];
     if (!update) return;
     const tag = Object.keys(update)[0];
@@ -1161,6 +1163,11 @@
 
     switch (tag) {
       case 'hand-dealt':
+        console.log('hand-dealt, community before clear:', gameState.community.length);
+        gameState.myCards = [];
+        renderMyCards();
+        gameState.community = [];
+        renderCommunityCards();
         gameState.myCards = (val && val.cards && Array.isArray(val.cards)) ? val.cards : (Array.isArray(val) ? val : []);
         gameState.handNum++;
         renderMyCards();
@@ -1169,8 +1176,14 @@
         break;
 
       case 'community-dealt':
+        console.log('community-dealt fired, street:', val.street, 'cards:', val.cards, 'existing community length:', gameState.community.length);
+        if (val.street === 'flop') gameState.community = [];
         gameState.street = val.street || gameState.street;
-        gameState.community = (gameState.community || []).concat(val.cards || []);
+        const newCards = val.cards || [];
+        const existing = gameState.community || [];
+        const existingKeys = new Set(existing.map(c => c.rank + c.suit));
+        const deduped = newCards.filter(c => !existingKeys.has(c.rank + c.suit));
+        gameState.community = existing.concat(deduped);
         renderCommunityCards();
         updateStreetLabel();
         break;
@@ -1181,9 +1194,11 @@
         gameState.toCall   = Number(val['to-call'])   || 0;
         gameState.minRaise = Number(val['min-raise']) || 0;
         renderPot(); updateCallBtn(); updateStreetLabel();
+        appendRoomSystem((gameState.street || 'street').toUpperCase() + ' — waiting for opponent');
         break;
 
       case 'your-turn':
+        console.log('your-turn received, street:', val.street, 'actor:', val);
         gameState.myTurn   = true;
         gameState.street   = (typeof val === 'string' ? val : val.street) || gameState.street;
         gameState.pot      = (typeof val === 'object' ? val.pot : null)      || gameState.pot;
@@ -1198,6 +1213,7 @@
         break;
 
       case 'peer-acted':
+        console.log('peer-acted received:', val.action);
         gameState.myTurn  = false;
         gameState.pot     = val['betting-state'].pot     || gameState.pot;
         gameState.toCall  = val['betting-state']['to-call']  || 0;
@@ -1206,6 +1222,8 @@
         renderPot(); renderBets(); updateCallBtn();
         updateStreetInfo('peer', val.action);
         appendRoomSystem(formatPeerAction(val.action));
+        gameState.myTurn = true;
+        setControlsEnabled(true);
         break;
 
       case 'player-folded':
@@ -1462,9 +1480,10 @@
     const div = document.createElement('div');
     div.className = `card face-up${large ? ' community' : ''}${RED.has(suit) ? ' red' : ''}`;
     const sym = SUITS[suit] || suit;
+    const r = rank === 'T' ? '10' : rank;
     div.innerHTML = `
-      <div class="card-corner"><div class="rank">${rank}</div><div class="suit">${sym}</div></div>
-      <div class="card-rank">${rank}</div><div class="card-suit">${sym}</div>`;
+      <div class="card-corner"><div class="rank">${r}</div><div class="suit">${sym}</div></div>
+      <div class="card-rank">${r}</div><div class="card-suit">${sym}</div>`;
     return div;
   }
 
@@ -1555,11 +1574,15 @@
   window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('roomChatLog').scrollTop = 99999;
     setControlsEnabled(false);
+    gameState.myCards = [];
+    gameState.community = [];
+    renderMyCards();
+    renderCommunityCards();
     openChannel();
     document.getElementById('leaveRoomBtn').addEventListener('click', leaveRoom);
-    document.getElementById('foldBtn').addEventListener('click', sendFold);
-    document.getElementById('callBtn').addEventListener('click', sendCall);
-    document.getElementById('raiseBtn').addEventListener('click', sendRaise);
+    document.getElementById('foldBtn').addEventListener('click', (e) => { e.preventDefault(); sendFold(); });
+    document.getElementById('callBtn').addEventListener('click', (e) => { e.preventDefault(); sendCall(); });
+    document.getElementById('raiseBtn').addEventListener('click', (e) => { e.preventDefault(); sendRaise(); });
     document.getElementById('setPotBtn').addEventListener('click', setPot);
     document.getElementById('setHalfBtn').addEventListener('click', setHalf);
     document.getElementById('setAllInBtn').addEventListener('click', setAllIn);

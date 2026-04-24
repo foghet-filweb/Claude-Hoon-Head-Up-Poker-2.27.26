@@ -240,6 +240,7 @@
           ==
         %street-action
           =/  rs0  room-state.state
+          ~>  %slog.[0 leaf+"street-action: phase={<-.phase.rs0>} action={<-.action>}"]
           ?.  ?=([%live *] phase.rs0)
             `this
           =/  ss   street-status.phase.rs0
@@ -368,11 +369,22 @@
             ::  we act first
             :~  [%give %fact ~[/game] %poker-room-update !>([%community-dealt next-str plaintext])]
                 [%give %fact ~[/game] %poker-room-update !>([%your-turn next-str ss pot.rs1 0 min-raise.config.rs1 small-blind.config.rs1 big-blind.config.rs1])]
+                [%pass /peer %agent [peer.rs0 %poker-room] %poke %poker-deal-action !>([%mp-community-reveal next-str plaintext])]
             ==
           ::  peer acts first
           :~  [%give %fact ~[/game] %poker-room-update !>([%community-dealt next-str plaintext])]
               [%give %fact ~[/game] %poker-room-update !>([%street-started next-str ss pot.rs1 0 min-raise.config.rs1])]
+              [%pass /peer %agent [peer.rs0 %poker-room] %poke %poker-deal-action !>([%mp-community-reveal next-str plaintext])]
           ==
+        %mp-community-reveal
+          =/  rs0  room-state.state
+          ?.  =(src.bowl peer.room-state.state)  `this
+          =/  new-community  (weld community.rs0 cards.action)
+          =/  ss=street-status:poker  [%bob ~ %.n %.n %.n]
+          =/  rs1  rs0(community new-community, phase [%live street.action ss], our-bet 0, peer-bet 0)
+          =.  state  [%0 rs1 role.state]
+          :_  this
+          ~[[%give %fact ~[/game] %poker-room-update !>([%community-dealt street.action cards.action])]]
         %mp-reveal-key
           =/  rs0   room-state.state
           =/  peer-d  key.action
@@ -466,6 +478,7 @@
                     =(our-bet.rs0 peer-bet.rs0)
                 ==
             ==
+          ~>  %slog.[0 leaf+"pga-check: our-actor={<our-actor>} street={<street.ph>} street-done={<street-done>}"]
           =/  rs1  rs0(phase [%live street.ph ss1])
           ?:  street-done
             ?:  =(street.ph %river)
@@ -571,7 +584,9 @@
     0
   :_  this
   =/  facts=(list card)
-    ~[[%give %fact ~[/game] %poker-room-update !>([%hand-dealt our.bowl our-hand.rs0])]]
+    =/  base=(list card)
+      ~[[%give %fact ~[/game] %poker-room-update !>([%hand-dealt our.bowl our-hand.rs0])]]
+    base
   ?.  =(actor.ss our-actor)  facts
   :_  facts
   [%give %fact ~[/game] %poker-room-update !>([%your-turn street.ph ss pot.rs0 to-call min-raise.config.rs0 small-blind.config.rs0 big-blind.config.rs0])]

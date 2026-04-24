@@ -6,5 +6,5 @@
   website+'https://poker.urbit.org'
   license+'MIT'
   base+'poker'
-  glob-http+['http://localhost:9999/glob-0v6.rel84.bl1eo.33gi1.0jcu8.hb69g.glob' 0v6.rel84.bl1eo.33gi1.0jcu8.hb69g]
+  glob-http+['http://localhost:9999/glob-0v5.set44.qiofb.kphfe.fb4bu.eq233.glob' 0v5.set44.qiofb.kphfe.fb4bu.eq233]
 ==

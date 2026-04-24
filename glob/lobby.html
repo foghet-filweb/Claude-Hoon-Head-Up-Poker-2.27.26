@@ -1686,6 +1686,15 @@
     // Open SSE stream via EventSource on the Eyre channel
     openSSE();
 
+    // Check for pending incoming challenge on reconnect
+    try {
+      const res = await fetch('/~/scry/poker-lobby/pending-in.json');
+      const d = await res.json();
+      if (d && d.challenger) {
+        showOverlay(d.challenger, d);
+      }
+    } catch(e) {}
+
     // Populate stats via scry
     loadStats();
     loadMaxHands();
