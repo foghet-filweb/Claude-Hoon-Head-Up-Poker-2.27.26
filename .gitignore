@@ -2,6 +2,8 @@
 *
 !.gitignore
 !README.md
+!CLAUDE.md
+!HANDOFF.md
 !desk.bill
 !desk.docket-0
 !sys.kelvin
