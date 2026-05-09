@@ -47,6 +47,11 @@ Order of Play:  PARTIAL — preflop correct, postflop backend correct,
 - Raise pre-selection at 360 instead of empty field
 - Presence detection not working (tick-tick-tick, ships not seeing each other)
 - Hand 2 UI transition broken for ~bes (only visible via direct URL)
+- CRITICAL: room.html Eyre channel dies mid-hand — eyre: no channel to move
+  and eyre: clogged errors appear after flop is dealt, causing JS to lose its
+  event subscription, buttons to go inoperable, and cards to disappear.
+  Backend Hoon state is correct throughout. Next session goal: find what is
+  causing the Eyre channel churn in room.html and stabilize it.
 
 ## Files Touched Today
 - glob/lobby.html — ourShip cookie fix
